@@ -1,0 +1,66 @@
+var_name,new_name,covariate,transformed,label,order
+c_0017,date,0,0,Survey date,0
+,hesitant,1,1,Hesitant,1
+,undecided,1,1,Undecided,2
+,acceptant,1,1,Acceptant,3
+,days,1,1,Days since survey start,4
+v_15,age,1,0,Age,10
+v_16,gender,0,0,Gender,11
+v_18,postcode,0,0,Postcode,12
+v_23,federal.state,0,0,State,13
+v_28,vaccination,1,0,Respondent has been vaccinated,14
+v_29,vaccination.N,0,0,Number of Vaccination(s),15
+v_30,network.vaccinated,1,0,Share of network vaccinated,16
+v_31,vaccination.eligible,0,0,Vaccination eligibility,17
+v_32,vaccination.invitation,0,0,Vaccination invitation,18
+v_33,vaccination.intent,0,0,Vaccination intent,19
+v_34,fear.longterm,0,0,Fear of long term effects,20
+v_35,fear.admission,0,0,Fear admission process,21
+v_36,fear.effectiveness,0,0,Fear effectiveness,22
+v_37,fear.side.effects,0,0,Fear side effects,23
+v_38,fear.no.danger,0,0,Covid not dangerous,24
+v_41,covid.infection,1,0,Previously had Covid,25
+v_42,covid.infection.proximity,1,0,Members of network infected,26
+v_43,covid.information,1,0,Seeks Covid information,27
+v_44,covid.media,1,0,Believes media exaggerates risk,28
+v_45,covid.rules.mask,1,0,Compliance: mask rules,29
+v_46,covid.rules.distance,1,0,Compliance: distance rule,30
+v_47,support.distance,1,0,Support distance rule,31
+v_48,prior.negative.incentives,0,0,Prior on freedoms,32
+v_49,prior.financial.renumeration,0,0,Prior on payments,33
+v_50,prior.reduction.transaction,0,0,Prior on transaction costs,34
+v_52,covid.income,1,0,Income loss due to Covid,35
+v_53,health,1,0,General health,36
+v_54,health2,1,0,Covid pre-existing conditions,37
+v_57,risk,1,0,Willingness to take risks,38
+v_58,trust,1,0,General Trust,39
+v_59,trust.government,1,0,Trust government,40
+v_60,trust.experts,1,0,Trust experts,41
+v_61,trust.country,1,0,Trust country,42
+v_62,trust.media,1,0,Trust media,43
+v_63,trust.healthcare,1,0,Trust healthcare,44
+v_64,political.interest,1,0,Politcal interest,45
+v_65,left.right,1,0,Right leaning,46
+v_66,voter.turnout,0,0,Voted last elections,47
+v_67,voting.decision,0,0,Voting decision last elections,48
+v_69,party.id,1,0,Party id,49
+v_72,solidarity,1,0,Values solidarity,50
+v_73,EU.support,1,0,EU support,51
+v_161,migration.support,1,0,Migration support,52
+v_108,Employment.Status,1,0,Employment Status,53
+v_111,Professional.position,1,0,Professional position,54
+v_140,education,1,0,Education ,55
+v_145,household.size,1,0,Household size,56
+v_148,citzenship,1,0,Non German Citizen,57
+v_150,Country.of.birth,1,0,Born outside of Germany,58
+v_152,migration.background,1,0,Migration background of parents,59
+v_154,household.income,0,0,Household income,60
+v_157,covid.surveys,0,0,Covid surveys,61
+,east.west,1,1,Former East Germany,62
+,CDU.CSU,1,1,Conservatives,63
+,SPD,1,1,Social Democrats,64
+,AfD,1,1,AfD,65
+,Greens,1,1,Green Party,66
+,FDP,1,1,Liberals,67
+,Left,1,1,Left Party,68
+,male,1,1,Male respondent,11
