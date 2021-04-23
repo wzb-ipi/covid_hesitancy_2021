@@ -13,9 +13,18 @@ editor_options:
   chunk_output_type: console
 ---
 
+# Heterogeneous treatment effects 
+
+Drawing on approaches in:
+
+**Reference:** [Athey, Tibshrani and Wager (Annals of Statistics, 2019)](https://projecteuclid.org/download/pdfview_1/euclid.aos/1547197251)
+, [Nie and Wager,  2017](https://arxiv.org/abs/1712.04912)
 
 
-## Prep het effects data for a given treatment, removing others
+
+## Helpers
+
+A function to prep het effects data for a given treatment, removing others.
 
 
 ```{r}
@@ -45,13 +54,6 @@ het_df <- function(treatment_name = "transaction_diff",
 
 ```
 
-
-# Heterogeneous treatment effects 
-
-Drawing on approaches in:
-
-**Reference:** [Athey, Tibshrani and Wager (Annals of Statistics, 2019)](https://projecteuclid.org/download/pdfview_1/euclid.aos/1547197251)
-, [Nie and Wager,  2017](https://arxiv.org/abs/1712.04912)
 
 
 ```{r heterogeneous}
@@ -439,6 +441,8 @@ sort(unique(as.numeric(paste(var_of_interest)))))) %>%
   xlab("quantiles")
 
 
+figure_8
+
 pdf(undecided_cf_path, height = 8, width = 8)
 figure_8
 dev.off()
@@ -446,37 +450,8 @@ dev.off()
 ```
 
 
-## Google searches
 
-```{r, appendix google}
-#define the keywords
-keywords=c("AstraZeneca")
-#set the geographic area: DE = Germany
-country=c('DE')
-#set the time window
-time=("2021-03-01 2021-04-01")
-#set channels 
-channel='web'
-trends = gtrends(keywords, gprop =channel,geo=country, time = time )
-#select only interst over time 
-time_trend=trends$interest_over_time
-head(time_trend)
-
-
-google_plot <- ggplot(data=time_trend, aes(x=date, y=hits,group=keyword,col=keyword))+
-  geom_line()+xlab('Time')+ylab('Relative Interest')+ theme_bw()+
-  theme(legend.title = element_blank(),legend.position="bottom",legend.text=element_text(size=12))+ggtitle("Google Search Volume within Germany")
-google_plot
-
-
-pdf(google_plot_path, height = 4, width = 8)
-google_plot
-dev.off()
-
-```
-
-
-## Predictions
+## Predictions by age
 
 ```{r}
 M <- lm_robust(outcome_diff~age2*negative_diff*transaction_diff, data = df)

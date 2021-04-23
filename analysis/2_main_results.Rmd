@@ -36,6 +36,7 @@ We conduct experimental analysis using a single profile forced choice conjoint e
 |                           | Treatment: Citizens who get vaccinated receive an expense allowance <br> of {Level: 25} euros after receiving the vaccination. |
 |                           | Treatment: Citizens who get vaccinated receive an expense allowance <br> of {Level: 50} euros after receiving the vaccination.  |
 
+## First differences and fixed effects effects comparison
 
 ```{r, results = "asis"}
 # Analysis

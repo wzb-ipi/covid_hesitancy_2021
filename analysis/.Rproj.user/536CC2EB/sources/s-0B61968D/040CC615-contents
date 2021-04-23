@@ -1,5 +1,11 @@
 ---
-title: "Replication archive for 'How to increase COVID-19 vaccination uptake'"
+title: "Replication archive for 'What incentives can spur Covid-19 vaccination uptake?'"
+authors:
+ - Heike Klüver
+ - Felix Hartmann
+ - Macartan Humphreys
+ - Ferdinand Geißler
+ - Johannes Giesecke
 date: "April 2021"
 output:
   html_document:
@@ -21,6 +27,7 @@ bibliography: references.bib
 editor_options:
   chunk_output_type: console
 ---
+
 
 # Housekeeping
 
