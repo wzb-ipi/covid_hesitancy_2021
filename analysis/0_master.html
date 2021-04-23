@@ -9,6 +9,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
+<meta name="author" content="Heike Klüver, Humboldt" />
+<meta name="author" content="Felix Hartmann, Humboldt" />
+<meta name="author" content="Macartan Humphreys, WZB and Columbia" />
+<meta name="author" content="Ferdinand Geißler, Humboldt" />
+<meta name="author" content="Johannes Giesecke, Humboldt" />
 
 
 <title>Replication archive for ‘What incentives can spur Covid-19 vaccination uptake?’</title>
@@ -1814,6 +1819,11 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Replication archive for ‘What incentives can spur Covid-19 vaccination uptake?’</h1>
+<h4 class="author">Heike Klüver, Humboldt</h4>
+<h4 class="author">Felix Hartmann, Humboldt</h4>
+<h4 class="author">Macartan Humphreys, WZB and Columbia</h4>
+<h4 class="author">Ferdinand Geißler, Humboldt</h4>
+<h4 class="author">Johannes Giesecke, Humboldt</h4>
 <h4 class="date">April 2021</h4>
 
 </div>
@@ -2277,8 +2287,8 @@ transaction_t1
                                   , 1, 0)
   )</code></pre>
 <pre class="r"><code>#print(dfSummary(df[,covariate_names], graph.magnif = 0.75), method = &#39;render&#39;)</code></pre>
-<div id="long-version" class="section level2">
-<h2><span class="header-section-number">2.1</span> long version</h2>
+<div id="generate-stacked-data-fram" class="section level2">
+<h2><span class="header-section-number">2.1</span> Generate stacked data fram</h2>
 <pre class="r"><code># This should also be possible with pivot_longer
 df_stacked &lt;- 
   bind_rows(mutate(df, t = 1), mutate(df, t = 2)) %&gt;%
@@ -4670,32 +4680,266 @@ close(fileConn)</code></pre>
             no_party = mean(No.party), 
             trust_experts = mean(trust.experts), 
             media_exaggerates = mean(covid.media), 
-            fear_longterm = mean(fear.longterm))</code></pre>
-<pre><code># A tibble: 4 x 6
-  status        AfD no_party trust_experts media_exaggerates fear_longterm
-* &lt;chr&gt;       &lt;dbl&gt;    &lt;dbl&gt;         &lt;dbl&gt;             &lt;dbl&gt;         &lt;dbl&gt;
-1 Acceptant  0.0344    0.213         0.712             0.325        NA    
-2 Hesitant   0.202     0.371         0.424             0.721         0.643
-3 Undecided  0.0832    0.391         0.560             0.512         0.680
-4 Vaccinated 0.0409    0.239         0.680             0.377        NA    </code></pre>
+            fear_longterm = mean(fear.longterm)) %&gt;%
+  kable()</code></pre>
+<table>
+<thead>
+<tr>
+<th style="text-align:left;">
+status
+</th>
+<th style="text-align:right;">
+AfD
+</th>
+<th style="text-align:right;">
+no_party
+</th>
+<th style="text-align:right;">
+trust_experts
+</th>
+<th style="text-align:right;">
+media_exaggerates
+</th>
+<th style="text-align:right;">
+fear_longterm
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Acceptant
+</td>
+<td style="text-align:right;">
+0.0343935
+</td>
+<td style="text-align:right;">
+0.2126730
+</td>
+<td style="text-align:right;">
+0.7115198
+</td>
+<td style="text-align:right;">
+0.3252408
+</td>
+<td style="text-align:right;">
+NA
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Hesitant
+</td>
+<td style="text-align:right;">
+0.2023810
+</td>
+<td style="text-align:right;">
+0.3705739
+</td>
+<td style="text-align:right;">
+0.4237637
+</td>
+<td style="text-align:right;">
+0.7211538
+</td>
+<td style="text-align:right;">
+0.6428571
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Undecided
+</td>
+<td style="text-align:right;">
+0.0831678
+</td>
+<td style="text-align:right;">
+0.3908601
+</td>
+<td style="text-align:right;">
+0.5595373
+</td>
+<td style="text-align:right;">
+0.5119926
+</td>
+<td style="text-align:right;">
+0.6798183
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Vaccinated
+</td>
+<td style="text-align:right;">
+0.0409226
+</td>
+<td style="text-align:right;">
+0.2388393
+</td>
+<td style="text-align:right;">
+0.6800595
+</td>
+<td style="text-align:right;">
+0.3770461
+</td>
+<td style="text-align:right;">
+NA
+</td>
+</tr>
+</tbody>
+</table>
 <pre class="r"><code>df %&gt;% 
   group_by(party.id) %&gt;% 
   summarize( 
             trust_experts = mean(trust.experts), 
             media_exaggerates = mean(covid.media), 
-            fear_longterm = mean(fear.longterm, na.rm = TRUE))</code></pre>
-<pre><code># A tibble: 9 x 4
-                      party.id trust_experts media_exaggerates fear_longterm
-*                    &lt;dbl+lbl&gt;         &lt;dbl&gt;             &lt;dbl&gt;         &lt;dbl&gt;
-1 1 [CDU]                              0.702             0.353         0.649
-2 2 [CSU]                              0.672             0.378         0.647
-3 3 [SPD]                              0.696             0.344         0.602
-4 4 [AfD]                              0.409             0.707         0.699
-5 5 [Bündnis 90/Die Grünen]            0.756             0.298         0.636
-6 6 [FDP]                              0.616             0.499         0.703
-7 7 [Die Linke]                        0.664             0.396         0.611
-8 8 [Andere Partei, und zwar:]         0.592             0.484         0.646
-9 9 [keiner Partei]                    0.556             0.500         0.679</code></pre>
+            fear_longterm = mean(fear.longterm, na.rm = TRUE)) %&gt;% kable()</code></pre>
+<table>
+<thead>
+<tr>
+<th style="text-align:right;">
+party.id
+</th>
+<th style="text-align:right;">
+trust_experts
+</th>
+<th style="text-align:right;">
+media_exaggerates
+</th>
+<th style="text-align:right;">
+fear_longterm
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.7024598
+</td>
+<td style="text-align:right;">
+0.3529644
+</td>
+<td style="text-align:right;">
+0.6494083
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+0.6721480
+</td>
+<td style="text-align:right;">
+0.3784687
+</td>
+<td style="text-align:right;">
+0.6470588
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+0.6955392
+</td>
+<td style="text-align:right;">
+0.3438732
+</td>
+<td style="text-align:right;">
+0.6016807
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+0.4089485
+</td>
+<td style="text-align:right;">
+0.7066504
+</td>
+<td style="text-align:right;">
+0.6987448
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+0.7556171
+</td>
+<td style="text-align:right;">
+0.2983995
+</td>
+<td style="text-align:right;">
+0.6355283
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+0.6155063
+</td>
+<td style="text-align:right;">
+0.4986438
+</td>
+<td style="text-align:right;">
+0.7027778
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+0.6643037
+</td>
+<td style="text-align:right;">
+0.3961878
+</td>
+<td style="text-align:right;">
+0.6111111
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+0.5919629
+</td>
+<td style="text-align:right;">
+0.4837713
+</td>
+<td style="text-align:right;">
+0.6462094
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+0.5564531
+</td>
+<td style="text-align:right;">
+0.4995036
+</td>
+<td style="text-align:right;">
+0.6792744
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div id="heterogeneous-treatment-effects" class="section level1">
@@ -4795,13 +5039,7 @@ list(cf = cf,
      var_imp = var_imp, 
      ntile_estimates = combined_estimates)
 }</code></pre>
-<p>Test:</p>
-<pre class="r"><code>test_df &lt;- het_df(treatment_name = &quot;transaction_diff&quot;)
-test &lt;-  test_df %&gt;% f_cf(n_trees=200)
-blp &lt;- best_linear_projection(test$cf, test$X)
-
-### Assessing heterogeneity
-hist(test$oob_tauhat_cf, main=&quot;Causal forests: out-of-bag CATE&quot;, col = &quot;cornflowerblue&quot;, las = 1)</code></pre>
+<p>Function to generate fitted values:</p>
 <pre class="r"><code>fitted_vals &lt;- function(var_of_interest, model = test){
   
   df_train &lt;- model$df_train
@@ -4959,10 +5197,10 @@ trust
 </tr>
 </tbody>
 </table>
-<pre class="r"><code>lapply(cf_undecided, function(j) names(j$var_imp[1:6])) %&gt;% bind_rows(.id = &quot;treatment&quot;) %&gt;% kable(caption = &quot;Strongest predictions, undecided &quot;)</code></pre>
+<pre class="r"><code>lapply(cf_undecided, function(j) names(j$var_imp[1:6])) %&gt;% bind_rows(.id = &quot;treatment&quot;) %&gt;% kable(caption = &quot;Most common predictors, undecided &quot;)</code></pre>
 <table>
 <caption>
-Strongest predictions, undecided
+Most common predictors, undecided
 </caption>
 <thead>
 <tr>
@@ -5067,10 +5305,10 @@ eduyears
 </tr>
 </tbody>
 </table>
-<pre class="r"><code>lapply(cf_hesitant, function(j) names(j$var_imp[1:6])) %&gt;% bind_rows(.id = &quot;treatment&quot;) %&gt;% kable(caption = &quot;Strongest predictions, hesitent &quot;)</code></pre>
+<pre class="r"><code>lapply(cf_hesitant, function(j) names(j$var_imp[1:6])) %&gt;% bind_rows(.id = &quot;treatment&quot;) %&gt;% kable(caption = &quot;Most common predictors, hesitant &quot;)</code></pre>
 <table>
 <caption>
-Strongest predictions, hesitent
+Most common predictors, hesitant
 </caption>
 <thead>
 <tr>
@@ -5262,6 +5500,7 @@ dev.off()</code></pre>
 </div>
 <div id="best-linear-projections" class="section level2">
 <h2><span class="header-section-number">4.6</span> Best linear projections</h2>
+<p>Using causal forests functions:</p>
 <pre class="r"><code>blps &lt;-
 lapply(
   list(all = cf_all, undecided = cf_undecided, hesitant = cf_hesitant), 
@@ -5305,6 +5544,7 @@ blps_plot
 dev.off()</code></pre>
 <pre><code>png 
   2 </code></pre>
+<p>Using <code>lm_robust</code>:</p>
 <pre class="r"><code>lm_interactions &lt;-
 lapply(
   list(all = df, undecided = dplyr::filter(df, undecided==1), hesitant = dplyr::filter(df, hesitant==1)), 

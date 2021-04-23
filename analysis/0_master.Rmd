@@ -1,11 +1,11 @@
 ---
 title: "Replication archive for 'What incentives can spur Covid-19 vaccination uptake?'"
-authors:
- - Heike Klüver
- - Felix Hartmann
- - Macartan Humphreys
- - Ferdinand Geißler
- - Johannes Giesecke
+author:
+ - Heike Klüver, Humboldt
+ - Felix Hartmann, Humboldt
+ - Macartan Humphreys, WZB and Columbia
+ - Ferdinand Geißler, Humboldt
+ - Johannes Giesecke, Humboldt
 date: "April 2021"
 output:
   html_document:

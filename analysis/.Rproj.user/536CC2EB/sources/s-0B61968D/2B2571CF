@@ -3,7 +3,7 @@
     "path": "C:/Dropbox/github/covid_hesitancy_2021/analysis/2_main_results.Rmd",
     "project_path": "2_main_results.Rmd",
     "type": "r_markdown",
-    "hash": "2017838393",
+    "hash": "797133719",
     "contents": "",
     "dirty": false,
     "created": 1619188994512.0,
@@ -11,15 +11,15 @@
     "relative_order": 5,
     "properties": {
         "chunk_output_type": "console",
-        "cursorPosition": "25,367",
-        "scrollLine": "26"
+        "cursorPosition": "25,241",
+        "scrollLine": "25"
     },
     "folds": "",
-    "lastKnownWriteTime": 1619198569,
+    "lastKnownWriteTime": 1619202206,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1619198569981,
+    "last_content_update": 1619202206754,
     "read_only": false,
     "read_only_alternatives": []
 }

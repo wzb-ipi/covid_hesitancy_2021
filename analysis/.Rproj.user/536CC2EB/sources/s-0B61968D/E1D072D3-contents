@@ -128,22 +128,9 @@ list(cf = cf,
 ```
 
 
-Test:
-
-```{r, eval = FALSE}
-test_df <- het_df(treatment_name = "transaction_diff")
-test <-  test_df %>% f_cf(n_trees=200)
-blp <- best_linear_projection(test$cf, test$X)
-
-### Assessing heterogeneity
-hist(test$oob_tauhat_cf, main="Causal forests: out-of-bag CATE", col = "cornflowerblue", las = 1)
-
-```
-
-
+Function to generate fitted values:
 
 ```{r}
-
 fitted_vals <- function(var_of_interest, model = test){
   
   df_train <- model$df_train
@@ -204,9 +191,9 @@ names(cf_hesitant) <- treatment_levels_diff
 ```{r}
 lapply(cf_all, function(j) names(j$var_imp[1:6])) %>% bind_rows(.id = "treatment") %>% kable(caption = "Strongest predictions")
 
-lapply(cf_undecided, function(j) names(j$var_imp[1:6])) %>% bind_rows(.id = "treatment") %>% kable(caption = "Strongest predictions, undecided ")
+lapply(cf_undecided, function(j) names(j$var_imp[1:6])) %>% bind_rows(.id = "treatment") %>% kable(caption = "Most common predictors, undecided ")
 
-lapply(cf_hesitant, function(j) names(j$var_imp[1:6])) %>% bind_rows(.id = "treatment") %>% kable(caption = "Strongest predictions, hesitent ")
+lapply(cf_hesitant, function(j) names(j$var_imp[1:6])) %>% bind_rows(.id = "treatment") %>% kable(caption = "Most common predictors, hesitant ")
 
 what_matters <- 
   list(All = cf_all, Undecided = cf_undecided, Hesitant = cf_hesitant) %>%
@@ -300,6 +287,8 @@ dev.off()
 
 ## Best linear projections
 
+Using causal forests functions:
+
 ```{r}
 blps <-
 lapply(
@@ -343,6 +332,9 @@ pdf(blps_plot_path, height = 6, width = 9)
 blps_plot
 dev.off()
 ```
+
+Using `lm_robust`:
+
 
 ```{r}
 

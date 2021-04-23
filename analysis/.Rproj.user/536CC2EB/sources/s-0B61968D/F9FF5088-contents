@@ -181,7 +181,7 @@ df <- read_sav(datapath) %>%
 
 
 
-## long version
+## Generate stacked data fram
 
 ```{r}
 

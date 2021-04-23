@@ -178,13 +178,14 @@ df %>%
             no_party = mean(No.party), 
             trust_experts = mean(trust.experts), 
             media_exaggerates = mean(covid.media), 
-            fear_longterm = mean(fear.longterm))
+            fear_longterm = mean(fear.longterm)) %>%
+  kable()
 
 df %>% 
   group_by(party.id) %>% 
   summarize( 
             trust_experts = mean(trust.experts), 
             media_exaggerates = mean(covid.media), 
-            fear_longterm = mean(fear.longterm, na.rm = TRUE))
+            fear_longterm = mean(fear.longterm, na.rm = TRUE)) %>% kable()
 
 ```
