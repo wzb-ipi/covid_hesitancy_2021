@@ -39,7 +39,7 @@ Z_labels <- read_sav(datapath) %>%
          financialB_t1 = 1*(X2 =="1b")) %>%
   select(Z_1_1, negative_t1, financialA_t1, financialB_t1, transaction_t1)
 
-kable(Z_labels)
+kable(Z_labels, booktabs = TRUE)
 
 df <- read_sav(datapath) %>%
   rowid_to_column("ID")  %>%
@@ -232,7 +232,7 @@ summ_stats <- summ_stats %>%
 
 ```{r summary_stats_table, results="asis", message=FALSE, echo=FALSE}
 # Pretty-printing in HTML
-summ_stats_table <- kable(summ_stats, "html", digits = 2, row.names = FALSE)
+summ_stats_table <- kable(summ_stats, "html", digits = 2, booktabs = TRUE, row.names = FALSE)
 kable_styling(summ_stats_table,
               bootstrap_options=c("striped", "hover", "condensed", "responsive"),
               full_width=FALSE)
@@ -247,7 +247,8 @@ close(fileConn)
 
 ```
 
-Presenting pairwise correlations is easy with the `corrplot` function from the `corrplot` package. On the table below, if the (unadjusted) p-value for a pair of variables is less than 0.05, its square is not colored.
+
+Pairwise correlations.
 
 ```{r cor plot, echo=FALSE, fig.width=10, fig.height=10, warning=FALSE}
 
@@ -303,32 +304,25 @@ dev.off()
 Concerns of the hesitent and undecided
 
 ```{r}
-fig_11 <- df %>% select("ID","fear.longterm", "fear.admission", "fear.effectiveness", "fear.side.effects", "fear.no.danger") %>%
-mutate_if(is.character,as.numeric) %>% 
-  dplyr::rename("Longterm Consequences"  = fear.longterm,  
-                "Doubt Admission"  = fear.admission, 
-                "Effectiveness" = fear.effectiveness, 
-                "Side Effects" = fear.side.effects, 
-                "Covid not dangerous" = fear.no.danger)%>% 
-  melt( id.vars = c("ID"), variable.name = "Group") %>% 
-  drop_na() %>%
-  dplyr::filter(value == "1")%>%
-  group_by(Group) %>% 
-  mutate(count = n()) %>% 
-  distinct(Group, count, .keep_all = TRUE )%>% 
-  group_by(value) %>%
-  mutate(sum = sum(count)) %>% 
-  mutate(perc = (count / sum)*100) %>% 
+fig_11 <- 
+  df %>% dplyr::select(starts_with("fear.")) %>%
+  mutate_if(is.character, as.numeric) %>% 
+  melt(variable.name = "Group") %>%  
+  mutate(Group = 
+           factor(Group,
+                  c("fear.longterm", "fear.admission", "fear.effectiveness", "fear.side.effects", "fear.no.danger"),
+                  c("Longterm Consequences", "Doubt approval process", "Doubt effectiveness", "Side Effects", "Covid not dangerous")))%>% 
+  group_by(Group) %>%
+  summarize(mean = 100*mean(value, na.rm = TRUE))  %>%
   ggplot() +
-  geom_bar(aes(x = reorder(Group, +perc), y = perc), stat = "identity", width = 0.6,alpha = 0.5)+
+  geom_bar(aes(Group, mean), stat = "identity", width = 0.6,alpha = 0.5)+
   theme_bw(base_size=18)+
   ylab("Percent (%)")+
-  labs(title = "Vaccination Fear")+
   theme(axis.title.y = element_blank())+
   coord_flip()
  fig_11
  
-pdf(fig_11_path, height = 3, width = 6)
+pdf(fig_11_path, height = 4, width = 8)
 fig_11
 dev.off()
  

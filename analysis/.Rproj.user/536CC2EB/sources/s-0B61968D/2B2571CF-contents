@@ -45,14 +45,14 @@ lm_robust(
   outcome_diff ~ negative_diff + financialA_diff + financialB_diff + transaction_diff,
   data=df, se_type = "stata") %>%  
   tidy %>%
-  kable(caption = "Basic first differences analysis", digits = 2)
+  kable(caption = "Basic first differences analysis", digits = 2, booktabs = TRUE)
 
 
 lm_robust(
   outcome ~ negative + financialA + financialB + transaction,
   data=df_stacked, se_type = "stata", fixed_effects =  ~ID) %>%  
   tidy %>%
-  kable(caption = "Basic Fixed effects analysis", digits = 2)
+  kable(caption = "Basic Fixed effects analysis", digits = 2, booktabs = TRUE)
 
 # The analysis function takes a dataframe, demeans within the (differenced) Xs 
 our_analysis <- function(dff)
@@ -152,12 +152,12 @@ names(data_omnibus) <- statuses
 
 lapply(data_omnibus, function(d)
 table(table(d$ID))) %>% bind_cols %>% mutate(freq = 1:2) %>% relocate(freq) %>%
-  kable(caption = "Most subjects appear only once")
+  kable(caption = "Most subjects appear only once", booktabs = TRUE)
 
 omnibus <- lapply(data_omnibus, function(d) lm_robust(outcome ~ omnibus, data = d, cluster = ID, se_type = "stata")) 
   
   omnibus[[4]] %>% tidy %>%
-  kable(digits = 2, caption = "All or nothing comparisons")
+  kable(digits = 2, caption = "All or nothing comparisons", booktabs = TRUE)
 
 fileConn<-file(tab_3_path)
 writeLines(texreg(omnibus, float.pos = "h!", include.ci = FALSE, caption = "\\label{omnibus} Effects of receiving all treatments compared to all control conditions", custom.coef.map =  list("(Intercept)" = "Constant (No incentives)","omnibus"
@@ -178,14 +178,8 @@ df %>%
             no_party = mean(No.party), 
             trust_experts = mean(trust.experts), 
             media_exaggerates = mean(covid.media), 
-            fear_longterm = mean(fear.longterm)) %>%
-  kable()
+            fear_longterm = mean(fear.longterm, na.rm = TRUE)) %>%
+  kable(digits = 2, booktabs = TRUE)
 
-df %>% 
-  group_by(party.id) %>% 
-  summarize( 
-            trust_experts = mean(trust.experts), 
-            media_exaggerates = mean(covid.media), 
-            fear_longterm = mean(fear.longterm, na.rm = TRUE)) %>% kable()
 
 ```

@@ -146,7 +146,7 @@ fitted_vals <- function(var_of_interest, model = test){
   df_grid <-  setNames(data.frame(x_grid), var_of_interest)
   
   other_covariates <- covariate_names[!covariate_names %in% var_of_interest]
-  df_median <- df_train %>% select(all_of(other_covariates)) %>% summarise_all(median) 
+  df_median <- df_train %>% dplyr::select(all_of(other_covariates)) %>% summarise_all(median) 
   df_eval <- crossing(df_median, df_grid)
   
   pred <- predict(cf, newdata=df_eval[,covariate_names], estimate.variance=TRUE)
@@ -168,19 +168,19 @@ df_eval %>% arrange(var_of_interest) %>%
 # Change n_trees below
 
 cf_all <- 
-  lapply(treatment_levels_diff, function(x) het_df(x, outcome_name = "outcome_diff",) %>% f_cf(n_trees=6000))
+  lapply(treatment_levels_diff, function(x) het_df(x, outcome_name = "outcome_diff",) %>% f_cf(n_trees=N_trees))
 names(cf_all) <- treatment_levels_diff
 
 cf_undecided <- 
   lapply(treatment_levels_diff, function(x) 
   het_df(x, outcome_name = "outcome_diff", dplyr::filter(df, undecided == 1)) %>% 
-    f_cf(n_trees=6000))
+    f_cf(n_trees=N_trees))
 names(cf_undecided) <- treatment_levels_diff
 
 cf_hesitant<- 
   lapply(treatment_levels_diff, function(x) 
   het_df(x, outcome_name = "outcome_diff", dplyr::filter(df, hesitant == 1)) %>% 
-    f_cf(n_trees=6000))
+    f_cf(n_trees=N_trees))
 names(cf_hesitant) <- treatment_levels_diff
 
 ```
@@ -189,11 +189,11 @@ names(cf_hesitant) <- treatment_levels_diff
 ## Show most common predictors
 
 ```{r}
-lapply(cf_all, function(j) names(j$var_imp[1:6])) %>% bind_rows(.id = "treatment") %>% kable(caption = "Strongest predictions")
+lapply(cf_all, function(j) names(j$var_imp[1:6])) %>% bind_rows(.id = "treatment") %>% kable(caption = "Strongest predictions", booktabs = TRUE)
 
-lapply(cf_undecided, function(j) names(j$var_imp[1:6])) %>% bind_rows(.id = "treatment") %>% kable(caption = "Most common predictors, undecided ")
+lapply(cf_undecided, function(j) names(j$var_imp[1:6])) %>% bind_rows(.id = "treatment") %>% kable(caption = "Most common predictors, undecided ", booktabs = TRUE)
 
-lapply(cf_hesitant, function(j) names(j$var_imp[1:6])) %>% bind_rows(.id = "treatment") %>% kable(caption = "Most common predictors, hesitant ")
+lapply(cf_hesitant, function(j) names(j$var_imp[1:6])) %>% bind_rows(.id = "treatment") %>% kable(caption = "Most common predictors, hesitant ", booktabs = TRUE)
 
 what_matters <- 
   list(All = cf_all, Undecided = cf_undecided, Hesitant = cf_hesitant) %>%
@@ -210,11 +210,11 @@ mutate(
   ggplot(aes(value, covariate, color = treatment)) + 
   geom_point()+
   scale_x_continuous(name="Variable Importance")+
-  theme_bw() + facet_wrap(~group)
+  theme_bw() + facet_wrap(~group) + ylab(" ")
 
 what_matters_plot
 
-pdf(fig_3_path, width = 7, height = 9)
+pdf(fig_3_path, width = 9, height = 9)
   what_matters_plot
 dev.off()
 
@@ -415,7 +415,7 @@ figure_8  <-
   bind_rows %>%
   mutate(var = factor(var, v2, v2labs),
          treatment = factor(treatment, 
-                            paste0(treatment_levels_diff, "_undecided"), 
+                            paste0(treatment_levels_diff), 
                             treatment_labels),
 var_of_interest = 
   factor(as.numeric(paste(var_of_interest)),
@@ -457,7 +457,8 @@ linearHypothesis(M, "negative_diff  = transaction_diff ")
 
 library(interplot)
 M0 <- lm(outcome_diff~age2*negative_diff*transaction_diff*financialB_diff, data = df)
-M2 <- lm(outcome_diff~age*negative_diff*transaction_diff*financialB_diff, data = df)
+M1 <- lm(outcome_diff~age*negative_diff*transaction_diff*financialB_diff, data = df)
+M2 <- lm(outcome_diff~age*negative_diff*transaction_diff*financialB_diff, data = dplyr::filter(df, status == "Undecided"))
 
 dff <- list(
   Freedoms = interplot(m = M2, var1 = "negative_diff", var2 = "age", plot = FALSE),

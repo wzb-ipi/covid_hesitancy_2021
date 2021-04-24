@@ -72,6 +72,9 @@ pacman::p_load(
   treeClust,   # Predicting leaf position for causal trees (1.1-7)
   tibble)      # Modern alternative to data frames (2.1.1)
 
+# Number of trees for causal forests
+N_trees = 10000
+
 # Set seed for reproducibility
 set.seed(201911) 
 
