@@ -52,7 +52,7 @@ lm_robust(
   outcome ~ negative + financialA + financialB + transaction,
   data=df_stacked, se_type = "stata", fixed_effects =  ~ID) %>%  
   tidy %>%
-  kable(caption = "Basic Fixed effects analysis", digits = 2, booktabs = TRUE)
+  kable(caption = "Basic Fixed effects analysis", digits = 3, booktabs = TRUE)
 
 # The analysis function takes a dataframe, demeans within the (differenced) Xs 
 our_analysis <- function(dff)
@@ -67,7 +67,7 @@ our_analysis <- function(dff)
   
 
 our_analysis(df) %>% tidy %>%
-  kable(caption = "Basic Fixed effects analysis with interactions", digits = 2)
+  kable(caption = "Basic Fixed effects analysis with interactions", digits = 3)
 ```
 
 
@@ -112,8 +112,7 @@ figure_2 <-
   by_status %>% 
   dplyr::filter(term %in% c("negative", "financialA", "financialB", "transaction")) %>% 
   dplyr::filter(status != "Vaccinated") %>%
-  mutate(Treatment = factor(term, c( "financialA", "financialB", "transaction", "negative"),
-                       c("Financial 25", "Financial 50", "Freedoms", "Local Doctors"))) %>%
+  mutate(Treatment = factor(term, treatment_levels, treatment_labels)) %>%
   
   ggplot(aes(Treatment, estimate, color = status, shape = status)) + 
   geom_point(position = position_dodge(width = 0.3)) + 

@@ -37,7 +37,7 @@ Z_labels <- read_sav(datapath) %>%
          transaction_t1 = as.numeric(X3), 
          financialA_t1 = 1*(X2 =="1a"), 
          financialB_t1 = 1*(X2 =="1b")) %>%
-  select(Z_1_1, negative_t1, financialA_t1, financialB_t1, transaction_t1)
+  dplyr::select(Z_1_1, negative_t1, financialA_t1, financialB_t1, transaction_t1)
 
 kable(Z_labels, booktabs = TRUE)
 
@@ -181,7 +181,9 @@ df <- read_sav(datapath) %>%
 
 
 
-## Generate stacked data fram
+## Generate stacked data frame
+
+The wide dataframe is used for first differences analysis. In addition we make use of a stacked data frame for fixed effects analysis. 
 
 ```{r}
 
