@@ -1,0 +1,21 @@
+
+
+list(
+  lm_robust(outcome ~ negative + financialA + financialB + transaction, 
+          data = df_stacked %>% dplyr::filter(t==1 & status != "Vaccinated")) %>% 
+  tidy,
+lm_robust(outcome ~ negative + financialA + financialB + transaction, 
+          data = df_stacked %>% dplyr::filter(t==2 & status != "Vaccinated"))%>% 
+  tidy,
+lm_robust(outcome ~ negative + financialA + financialB + transaction  + status, 
+          data = df_stacked %>% dplyr::filter(t==2 & status != "Vaccinated")) %>% tidy) %>% 
+  bind_rows %>%
+  dplyr::filter(term == "transaction") %>% pull(estimate)
+
+lm_robust(outcome ~ negative + financialA + financialB + transaction, 
+          data = df_stacked %>% dplyr::filter(t==1 & status == "Acceptant"))
+lm_robust(outcome ~ negative + financialA + financialB + transaction, 
+          data = df_stacked %>% dplyr::filter(t==2 & status == "Acceptant"))
+
+
+x <- out %>% dplyr::filter(term == "Local Doctors") %>% arrange(status, t) %>% dplyr::select(status, term, estimate)

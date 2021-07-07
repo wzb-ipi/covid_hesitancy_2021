@@ -1,0 +1,26 @@
+{
+    "id": "37364651",
+    "path": "C:/Dropbox/Covid Vaccine Allocation/5_writing/Paper 1/PNAS/analysis/3_het_effects.Rmd",
+    "project_path": "3_het_effects.Rmd",
+    "type": "r_markdown",
+    "hash": "399815950",
+    "contents": "",
+    "dirty": false,
+    "created": 1625585808184.0,
+    "source_on_save": false,
+    "relative_order": 5,
+    "properties": {
+        "chunk_output_type": "console",
+        "cursorPosition": "504,21",
+        "scrollLine": "497",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1625626182,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1625626182072,
+    "read_only": false,
+    "read_only_alternatives": []
+}

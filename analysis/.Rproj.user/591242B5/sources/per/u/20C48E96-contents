@@ -1,0 +1,11 @@
+
+m <- lm_robust(hesitant ~ running*cutoff, 
+        data = df %>% mutate(running = as.Date(datetime) - as.Date("2021-03-15"),
+        cutoff = as.Date(datetime) >= as.Date("2021-03-15")),
+        cluster = running, se_type = "stata")
+
+m %>% tidy()
+p <- predict(m)
+
+df %>% group_by(as.Date(datetime)) %>% summarize(share_hesitant = mean(hesitant, na.rm = TRUE)) %>% plot ; abline(v = as.Date("2021-03-15"))
+lines(as.Date(df$datetime), p)

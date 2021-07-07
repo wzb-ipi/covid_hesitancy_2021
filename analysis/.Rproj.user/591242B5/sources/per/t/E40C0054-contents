@@ -1,0 +1,526 @@
+---
+title: 'Heterogeneous Effects'
+output:
+  html_document:
+    number_sections: no
+    toc: yes
+    toc_float: yes
+    toc_depth: 2
+    self_contained: yes
+abstract: 
+bibliography: references.bib  
+editor_options:
+  chunk_output_type: console
+---
+
+# Heterogeneous treatment effects 
+
+Drawing on approaches in:
+
+**Reference:** [Athey, Tibshrani and Wager (Annals of Statistics, 2019)](https://projecteuclid.org/download/pdfview_1/euclid.aos/1547197251)
+, [Nie and Wager,  2017](https://arxiv.org/abs/1712.04912)
+
+
+
+## Helpers
+
+A function to prep het effects data for a given treatment, removing others.
+
+
+```{r}
+
+num_tiles <- 4  # ntiles = CATE is above / below the median
+
+# Note this is set up so that we can swap in the difference outcome easily
+
+het_df <- function(treatment_name = "transaction_diff", 
+                   outcome_name = "outcome_diff",
+                   data = df) {
+  data$W = data[treatment_name][[1]]
+  data$Y = data[outcome_name][[1]]
+  data %>% 
+    dplyr::select(Y, W, ID, all_of(covariate_names)) %>%
+    drop_na() %>%
+    mutate_if(is.factor, as.numeric)  %>%
+    # mutate(federal.state =  as.numeric(factor(federal.state))) %>%
+    # Trick to render W binary
+    dplyr::mutate(
+      Y = ifelse(W<0, -Y, Y),
+      W = W^2)  
+}
+
+```
+
+
+
+```{r heterogeneous}
+# heterogeneous treatment effects 
+
+#### Function to fit the forest and save outputs: input dataframe should have a privileged Y and W
+
+f_cf <- function(df, n_trees = 1000) {
+  
+  # rule of thumb: num.trees = number of individuals
+  
+  df_train <- sample_frac(df, replace=FALSE, size=train_fraction)
+  df_test  <- anti_join(df, df_train, by = "ID") #need to check on larger 
+  X <- as.matrix(df_train[, covariate_names])
+  
+  cf <-
+    causal_forest(
+    X = X,
+    Y = df_train$Y,
+    W = df_train$W,
+    num.trees=n_trees) 
+
+  #### Predict point estimates and standard errors (training set, out-of-bag)
+  oob_pred      <- predict(cf, estimate.variance=TRUE)
+  oob_tauhat_cf <- oob_pred$predictions
+  oob_tauhat_cf_se <- sqrt(oob_pred$variance.estimates)
+  
+  #### Predict point estimates and standard errors (test set)
+  # test_pred <- predict(cf, newdata=as.matrix(df_test[covariate_names]), estimate.variance=TRUE)
+  # tauhat_cf_test <- test_pred$predictions
+  # tauhat_cf_test_se <- sqrt(test_pred$variance.estimates)
+  
+  var_imp        <- c(variable_importance(cf)) 
+  names(var_imp) <- covariate_names
+  var_imp <- var_imp %>% sort(decreasing=TRUE)
+  
+  df_train$cate  <- oob_tauhat_cf
+  df_train$ntile <- factor(ntile(oob_tauhat_cf, n=num_tiles))
+
+# Standard model estimates by quantile
+estimated_sample_ate <- 
+  lm_robust(Y ~ ntile + ntile:W, data=df_train) %>% 
+  tidy() %>% 
+  dplyr::filter(stringr::str_detect(term, ":W"))
+
+# AIPW estimates by quantile
+estimated_aipw_ate <- 
+  lapply(
+  seq(num_tiles), function(w) 
+    average_treatment_effect(cf, subset = df_train$ntile == w)
+  ) %>% bind_rows
+
+combined_estimates <- 
+  bind_rows(
+    estimated_sample_ate %>% mutate(type = "lm_robust") %>% dplyr::select(-outcome, -df, -statistic, - p.value),
+    estimated_aipw_ate %>% rename(std.error = std.err) %>% 
+      mutate(
+        type  = "aipw",
+        term = estimated_sample_ate$term,
+        conf.low = estimate - 1.96*std.error,
+        conf.high = estimate + 1.96*std.error)
+  )
+# Outputs
+list(cf = cf,
+     df_train = df_train, 
+     df_test = df_test, 
+     X = X,
+     oob_tauhat_cf = oob_tauhat_cf, 
+     var_imp = var_imp, 
+     ntile_estimates = combined_estimates)
+}
+```
+
+
+Function to generate fitted values:
+
+```{r}
+fitted_vals <- function(var_of_interest, model = test){
+  
+  df_train <- model$df_train
+  cf <- model$cf
+  
+      is_continuous <- (length(unique(df_train[var_of_interest][[1]])) > 5) # crude rule for determining continuity
+    if(is_continuous) {
+      x_grid <- quantile(df_train[var_of_interest][[1]], probs = seq(0, 1, length.out = 5))
+    } else {
+      x_grid <- sort(unique(df_train[var_of_interest][[1]]))
+    }
+    
+  df_grid <-  setNames(data.frame(x_grid), var_of_interest)
+  
+  other_covariates <- covariate_names[!covariate_names %in% var_of_interest]
+  df_median <- df_train %>% dplyr::select(all_of(other_covariates)) %>% summarise_all(median) 
+  df_eval <- crossing(df_median, df_grid)
+  
+  pred <- predict(cf, newdata=df_eval[,covariate_names], estimate.variance=TRUE)
+df_eval$tauhat <- pred$predictions
+df_eval$se <- sqrt(pred$variance.estimates)
+
+# Change to factor so the plotted values are evenly spaced (e.g. logicals)
+df_eval %>% arrange(var_of_interest) %>%
+  mutate(var_of_interest = as.factor(as.numeric(df_eval[var_of_interest][[1]])))
+}
+
+```
+
+
+## Run forests for all treatments
+
+```{r}
+
+# Change n_trees below
+
+cf_all <- 
+  lapply(treatment_levels_diff, function(x) het_df(x, outcome_name = "outcome_diff") %>% f_cf(n_trees=N_trees))
+names(cf_all) <- treatment_levels_diff
+
+cf_undecided <- 
+  lapply(treatment_levels_diff, function(x) 
+  het_df(x, outcome_name = "outcome_diff", dplyr::filter(df, undecided == 1)) %>% 
+    f_cf(n_trees=N_trees))
+names(cf_undecided) <- treatment_levels_diff
+
+cf_hesitant<- 
+  lapply(treatment_levels_diff, function(x) 
+  het_df(x, outcome_name = "outcome_diff", dplyr::filter(df, refusing == 1)) %>% 
+    f_cf(n_trees=N_trees))
+names(cf_hesitant) <- treatment_levels_diff
+
+```
+  
+  
+## Show most common predictors
+
+```{r}
+lapply(cf_all, function(j) names(j$var_imp[1:6])) %>% bind_rows(.id = "treatment") %>% kable(caption = "Strongest predictions", booktabs = TRUE)
+
+lapply(cf_undecided, function(j) names(j$var_imp[1:6])) %>% bind_rows(.id = "treatment") %>% kable(caption = "Most common predictors, undecided ", booktabs = TRUE)
+
+lapply(cf_hesitant, function(j) names(j$var_imp[1:6])) %>% bind_rows(.id = "treatment") %>% kable(caption = "Most common predictors, refusing ", booktabs = TRUE)
+
+what_matters <- 
+  list(All = cf_all, Undecided = cf_undecided, Hesitant = cf_hesitant) %>%
+  lapply(function(res) 
+    lapply(res, function(j) j$var_imp %>% t %>% data.frame) %>%
+      bind_rows %>% mutate(treatment = names(cf_all)) %>%
+      gather(covariate, "value", - treatment)) %>% bind_rows(.id = "group")
+  
+what_matters_plot <- 
+what_matters  %>% 
+mutate(
+  covariate = factor(covariate,   rev(var_list$new_name), rev(var_list$label)),
+  treatment = factor(treatment, treatment_levels_diff, treatment_labels)) %>% 
+  ggplot(aes(value, covariate, color = treatment)) + 
+  geom_point()+
+  scale_x_continuous(name="Variable Importance")+
+  theme_bw() + facet_wrap(~group) + ylab(" ")
+
+what_matters_plot
+
+pdf(fig_3_path, width = 9, height = 9)
+  what_matters_plot
+dev.off()
+
+```
+
+## Show variation across ntiles
+
+```{r}
+# plot
+lapply(cf_all, function(j)  j$ntile_estimates) %>% 
+  bind_rows(.id = "treatment") %>%
+  ggplot() +
+  geom_pointrange(
+    aes(x = term, y = estimate, ymax = conf.high, ymin = conf.low, color = type), 
+    size = 0.5,
+    position = position_dodge(width = .5)) +
+  geom_errorbar(aes(x = term, ymax = conf.high, ymin = conf.low, color = type), 
+                width = 0.4,
+                size = 0.75,
+                position = position_dodge(width = .5)) +
+  theme_bw() +
+  labs(x = "N-tile", y = "ATE Estimate", title = "ATE within N-tiles") +
+  facet_wrap(~treatment)
+
+```
+
+
+## Combined graph of heterogeneous effects
+
+```{r}
+
+vars <- c("days", "age2", "undecided", "solidarity", "support.distance","distance_km")
+
+all_marginals <- 
+  lapply(vars, function(x) 
+         lapply(cf_all , function(model)
+           fitted_vals(x, model = model) %>%
+             mutate(var = x)
+           ) %>% bind_rows(.id = "treatment")) %>%
+  bind_rows %>%
+  mutate(var = factor(var, vars, c("Days", "Age (Percentile)", "Undecided", "Solidarity", "Support distancing","Distance to Vaccination Center")),
+         treatment = 
+           factor(treatment,treatment_levels_diff, treatment_labels),
+var_of_interest = 
+  factor(as.numeric(paste(var_of_interest)),
+sort(unique(as.numeric(paste(var_of_interest))))))
+
+figure_4 <-
+  
+all_marginals %>%
+  mutate(ymin_val = tauhat-1.96*se) %>%
+  mutate(ymax_val = tauhat+1.96*se) %>%
+  ggplot()  + 
+  geom_line(aes_string(x="var_of_interest", y="tauhat", group = 1), color="red") +
+  geom_errorbar(aes_string(x="var_of_interest",ymin="ymin_val", ymax="ymax_val", width=.2),color="blue") +
+  geom_hline(yintercept=0, linetype="longdash", lwd=0.35, colour = "#B55555") +
+  ylab("Predicted Treatment Effect") +
+  theme_bw() +
+  theme(axis.ticks = element_blank()) +
+  facet_grid(treatment ~ var, scales = "free_x") +
+  xlab("quantiles")
+
+figure_4
+
+pdf(fig_4_path, width = 8, height = 6) 
+figure_4
+dev.off()
+
+```
+
+## Best linear projections
+
+Using causal forests functions:
+
+```{r}
+blps <-
+lapply(
+  list(all = cf_all, undecided = cf_undecided, refusing = cf_hesitant), 
+  function(set) lapply(set,  function(model)
+       lapply(1:length(covariate_names), function(i)
+           best_linear_projection(model$cf, model$X[,i]) %>% 
+             tidy  %>% 
+         dplyr::filter(term!="(Intercept)") %>% 
+         dplyr::mutate(var = covariate_names[i])) %>%
+        bind_rows()) %>% 
+    bind_rows(.id = "treatment")) %>% bind_rows(.id = "set") %>%
+  dplyr::mutate(treatment = factor(treatment, treatment_levels_diff, treatment_labels)) 
+
+
+# importance
+top <- 3
+most_common <- c(lapply(cf_all, function(j) names(j$var_imp[1:top])) %>% bind_rows(.id = "treatment") %>% unlist(),
+lapply(cf_undecided, function(j) names(j$var_imp[1:top])) %>% bind_rows(.id = "treatment") %>% unlist(),
+lapply(cf_hesitant, function(j) names(j$var_imp[1:top])) %>% bind_rows(.id = "treatment") %>% unlist()) %>% unique()
+
+# add in promised measures from PAP
+
+most_common <- unique(c(most_common, "AfD", "risk", "trust"))
+blps_plot <- 
+  blps %>% dplyr::filter(var %in% most_common) %>%
+  mutate(var = factor(var,   rev(var_list$new_name), rev(var_list$label))) %>%
+    ggplot(aes(estimate, var, color = set)) + 
+    geom_point(position=position_dodge(width = .5)) +
+    geom_errorbar(aes(xmin = estimate - 1.96*std.error, xmax = estimate + 1.96*std.error), width = .25,  position=position_dodge(width = .5)) +
+  facet_grid(~treatment) +
+  geom_vline(xintercept = 0, color = "red") +
+  theme_bw()  +
+  ylab("")
+
+
+
+blps_plot
+
+pdf(blps_plot_path, height = 6, width = 9)
+blps_plot
+dev.off()
+```
+
+Using `lm_robust`:
+
+
+```{r}
+
+lm_interactions <-
+lapply(
+  list(all = df, undecided = dplyr::filter(df, undecided==1), refusing = dplyr::filter(df, refusing==1)), 
+  function(dff) lapply(treatment_levels_diff,  function(X)
+       lapply(1:length(covariate_names), function(i)
+           lm_robust(as.formula(paste("outcome_diff~", X, "*", covariate_names[i])), data = dff) %>% 
+             tidy  %>% slice(4) %>%
+         mutate(var = covariate_names[i], treatment = X)) %>%
+        bind_rows()) %>% 
+    bind_rows()) %>% bind_rows(.id = "set") %>%
+  mutate(treatment = factor(treatment, treatment_levels_diff, treatment_labels)) 
+
+lm_plot <- 
+  lm_interactions %>% dplyr::filter(var %in% most_common) %>%
+  dplyr::filter(!(var == "undecided" & set == "undecided")) %>%
+  dplyr::filter(!(var == "refusing" & set == "refusing")) %>%
+  mutate(var = factor(var,   rev(var_list$new_name), rev(var_list$label))) %>%
+    ggplot(aes(estimate, var, color = set)) + 
+    geom_point(position=position_dodge(width = .5)) +
+    geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = .25,  position=position_dodge(width = .5)) +
+  facet_grid(~treatment) +
+  geom_vline(xintercept = 0, color = "red") +
+  theme_bw()  +
+  ylab("")
+
+lm_plot
+
+pdf(lm_plot_path, height = 6, width = 9)
+lm_plot
+dev.off()
+
+
+
+
+```
+
+# Appendix
+
+## Combined out of sample predictions
+
+```{r, eval = FALSE}
+
+a <- lapply(cf_all, function(x) {
+
+  p <- predict(x$cf, x$df_test[, covariate_names])$predictions
+  
+  lapply(vars, function(v)
+  data.frame(prediction = p, value = x$df_test[[v]], var = v)
+  ) %>% bind_rows()
+  }
+  )  %>% bind_rows(.id = "treatment")
+
+p <- 
+  a %>% ggplot(aes(value, prediction)) +
+  geom_point() +  
+  facet_grid(treatment ~ var, scales = "free_x")
+
+p
+#plot(x$df_train$age, p$predictions, cex = .1)
+```
+
+## Marginal effects for undecided
+
+```{r, appendix undecided}
+
+v2 <- c("age2",  "solidarity", "support.distance", "trust", "trust.media")
+
+v2labs <- c("Age (Percentile)",  "Solidarity", "Support distancing","General trust", "Trust media")
+
+
+figure_8  <- 
+  
+  lapply(v2, function(x) 
+         lapply(cf_undecided , function(model)
+           fitted_vals(x, model = model) %>%
+             mutate(var = x)
+           ) %>% bind_rows(.id = "treatment")) %>%
+  bind_rows %>%
+  mutate(var = factor(var, v2, v2labs),
+         treatment = factor(treatment, 
+                            paste0(treatment_levels_diff), 
+                            treatment_labels),
+var_of_interest = 
+  factor(as.numeric(paste(var_of_interest)),
+sort(unique(as.numeric(paste(var_of_interest)))))) %>%
+  mutate(ymin_val = tauhat-1.96*se) %>%
+  mutate(ymax_val = tauhat+1.96*se) %>%
+  ggplot()  + 
+  geom_line(aes_string(x="var_of_interest", y="tauhat", group = 1), color="red") +
+  geom_errorbar(aes_string(x="var_of_interest",ymin="ymin_val", ymax="ymax_val", width=.2),color="blue") +
+  geom_hline(yintercept=0, linetype="longdash", lwd=0.35, colour = "#B55555") +
+  ylab("Predicted Treatment Effect") +
+  theme_bw() +
+  theme(axis.ticks = element_blank()) +
+  facet_grid(treatment ~ var, scales = "free_x") +
+  xlab("quantiles")
+
+
+figure_8
+
+pdf(undecided_cf_path, height = 8, width = 8)
+figure_8
+dev.off()
+
+```
+
+
+
+## Predictions by age
+
+```{r}
+M <- lm_robust(outcome_diff~age2*negative_diff*transaction_diff, data = df)
+
+# Different for old 
+linearHypothesis(M, "negative_diff + age2:negative_diff = transaction_diff + age2:transaction_diff")
+
+# Different for young 
+linearHypothesis(M, "negative_diff  = transaction_diff ")
+
+M0 <- lm(outcome_diff~age2*negative_diff*transaction_diff*financialB_diff, data = df)
+M1 <- lm(outcome_diff~age*negative_diff*transaction_diff*financialB_diff, data = df)
+M2 <- lm(outcome_diff~age*negative_diff*transaction_diff*financialB_diff, data = dplyr::filter(df, status == "Undecided"))
+
+dff <- list(
+  Freedoms = interplot(m = M2, var1 = "negative_diff", var2 = "age", plot = FALSE),
+  'Local Doctors' = interplot(m = M2, var1 = "transaction_diff", var2 = "age", plot = FALSE),
+    'Financial 50' = interplot(m = M2, var1 = "financialB_diff", var2 = "age", plot = FALSE)) %>% bind_rows(.id = "Treatment")
+
+
+age_plot <- dff %>%
+ggplot(aes(x=age, y=coef, colour=Treatment)) + #geom_point() +
+  geom_line() +geom_ribbon(aes(ymin=lb, ymax=ub, fill=Treatment), alpha=0.1) + ylab("effect of treatment on acceptance") + xlab("age of respondent")  + theme_bw()
+
+
+age_plot
+
+pdf(age_fig_path, width = 7, height = 4)
+age_plot
+dev.off()
+
+
+```
+
+## Predictions by distance to vaccination center
+
+```{r}
+M <- lm_robust(outcome_diff~distance_km*negative_diff*transaction_diff, data = df)
+# Different for old 
+linearHypothesis(M, "negative_diff + distance_km:negative_diff = transaction_diff + distance_km:transaction_diff")
+
+# Different for young 
+linearHypothesis(M, "negative_diff  = transaction_diff ")
+
+M1 <- lm(outcome_diff~distance_km*negative_diff*transaction_diff*financialB_diff, data = df)
+M2 <- lm(outcome_diff~distance_km*negative_diff*transaction_diff*financialB_diff, data = dplyr::filter(df, status == "Undecided"))
+
+dff <- list(
+  Freedoms = interplot(m = M1, var1 = "negative_diff", var2 = "distance_km", plot = FALSE),
+  'Local Doctors' = interplot(m = M1, var1 = "transaction_diff", var2 = "distance_km", plot = FALSE),
+    'Financial 50' = interplot(m = M1, var1 = "financialB_diff", var2 = "distance_km", plot = FALSE)) %>% bind_rows(.id = "Treatment")
+
+
+distance_plot <- dff %>%
+ggplot(aes(x=distance_km, y=coef, colour=Treatment)) + #geom_point() +
+  geom_line() +geom_ribbon(aes(ymin=lb, ymax=ub, fill=Treatment), alpha=0.1) + ylab("effect of treatment on acceptance") + xlab("Distance to Vaccination Center (in km)")  + theme_bw()
+
+
+distance_plot
+
+pdf(distance_plot, width = 7, height = 4)
+distance_plot
+dev.off()
+
+
+```
+
+## Combined Figure
+```{r}
+figure_13 <- ggarrange(lm_plot, age_plot, distance_plot,
+                    labels = c("A", "B", "C"),
+                    ncol = 1, nrow = 3)
+figure_13
+pdf(fig_13_path, width = 7, height = 15)
+figure_13
+dev.off()
+
+
+```
+

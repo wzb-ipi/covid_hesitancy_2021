@@ -1,0 +1,42 @@
+M <- 
+  lm_robust(formula = outcome_diff ~ running*negative_diff*cutoff, data = df %>% 
+            mutate(running = as.Date(datetime) - as.Date("2021-03-15"), 
+                   cutoff = as.Date(datetime) >= as.Date("2021-03-15")), 
+          clusters = running, se_type = "stata") %>%
+  summary()
+
+M2 <- 
+  lm_robust(formula = outcome_diff ~ running*negative_diff*cutoff, data = df %>% 
+              mutate(running = as.Date(datetime) - as.Date("2021-03-12"), 
+                     cutoff = as.Date(datetime) >= as.Date("2021-03-12")), 
+            clusters = running, se_type = "stata") %>%
+  summary()
+
+effect <- 0.0210079 + -0.0041466*running + 0.0045507*running*(running >= 0)
+> plot(running, effect)
+
+
+  lm_robust(formula = outcome_diff ~ running*negative_diff*cutoff, data = df %>% 
+              mutate(running = as.Date(datetime) - as.Date("2021-03-15"), 
+                     cutoff = as.Date(datetime) >= as.Date("2021-03-15")), 
+            se_type = "stata") %>%
+  summary()
+  
+  
+  lm_robust(formula = outcome_diff ~ age*days*negative_diff, data = df, 
+            se_type = "stata") %>%
+    summary()
+  
+daily_effects <-   lapply(unique(as.Date(df$datetime)), function(day) {
+  lm_robust(formula = outcome_diff ~ negative_diff + age, data = dplyr::filter(df, as.Date(datetime) == day), 
+            se_type = "stata") %>% tidy %>% 
+    mutate(day = day) %>% 
+    dplyr::filter(term == "negative_diff") })
+
+
+daily_effects  %>% bind_rows %>% dplyr::filter(df >2) %>%
+  ggplot(aes(day, estimate)) + 
+  geom_point() + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high))
+  
+  

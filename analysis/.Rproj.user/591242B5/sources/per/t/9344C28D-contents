@@ -1,0 +1,362 @@
+---
+title: 'Figure 1'
+date: "April 2021"
+output:
+  html_document:
+    number_sections: no
+    toc: yes
+    toc_float: yes
+    toc_depth: 2
+    self_contained: yes
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: yes
+    toc_depth: '2'
+keywords: conditional average treatment effect; machine learning; econometrics
+theme: null
+abstract: 
+bibliography: references.bib  
+editor_options:
+  chunk_output_type: console
+---
+
+# Analysis: Main Treatment Effects 
+
+We conduct experimental analysis using a single profile forced choice conjoint experiment [@hainmueller2014causal] using 2x2x3 factorial design, with factors assigned with independent probabilities. Each respondent will receive two vignettes successively. Our population of interest consists of all German citizens over the age of 18. For this study, we rel5y on a representative sample of 20,000 citizens across Germany. The online-survey was rolled out between March 12 and March 14, 2021.
+
+
+| Factor $Z$                | Level $L$| 
+|---------------|--------------------|
+| Negative incentives| Control: There are **no special regulations** for vaccinated people even when the Corona <br> incidence is high. For example, they cannot travel again, visit cinemas, restaurants <br>  or concerts and are still subject to contact restrictions. |
+|                           | Treatment: **Special regulations** apply to vaccinated people.<br> For example, even when the Corona incidence is high, they can travel again, visit cinemas, <br> restaurants or concerts and are not subject to any contact restrictions|
+| Reduction Transaction Cost| Control: Eligible citizens can get vaccinated against Corona at the <br> nearest vaccination center, but not from their family doctor. |
+|                           | Treatment: Eligible citizens can have themselves vaccinated against <br> Corona at the nearest vaccination center or their family doctor. |
+| Financial renumeration    | Control: Citizens who are vaccinated will not receive any allowance <br> after receiving the vaccination. |
+|                           | Treatment: Citizens who get vaccinated receive an expense allowance <br> of {Level: 25} euros after receiving the vaccination. |
+|                           | Treatment: Citizens who get vaccinated receive an expense allowance <br> of {Level: 50} euros after receiving the vaccination.  |
+
+## First differences and fixed effects effects comparison
+
+```{r, results = "asis"}
+# Analysis
+
+lm_robust(
+  outcome_diff ~ negative_diff + financialA_diff + financialB_diff + transaction_diff,
+  data=df, se_type = "stata") %>%  
+  tidy %>%
+  kable(caption = "Basic first differences analysis", digits = 2, booktabs = TRUE)
+
+
+lm_robust(
+  outcome ~ negative + financialA + financialB + transaction,
+  data=df_stacked, se_type = "stata", fixed_effects =  ~ID) %>%  
+  tidy %>%
+  kable(caption = "Basic Fixed effects analysis", digits = 3, booktabs = TRUE)
+
+# The analysis function takes a dataframe, demeans within the (differenced) Xs 
+our_analysis <- function(dff)
+  lm_robust(
+  outcome_diff ~ negative*financialA*transaction + negative*financialB*transaction,
+  data = dff %>%
+    mutate(negative = negative_diff - mean(negative_diff),
+           financialA = financialA_diff- mean(financialA_diff),
+           financialB = financialB_diff - mean(financialB_diff),
+           transaction = transaction_diff - mean(transaction_diff)), 
+  se_type = "stata")  
+  
+
+our_analysis(df) %>% tidy %>%
+  kable(caption = "Basic Fixed effects analysis with interactions", digits = 3)
+
+
+```
+
+
+## Model list
+
+```{r}
+
+statuses <- unique(df$status)
+
+model_list <- lapply(statuses, function(j) our_analysis(df %>% dplyr::filter(status == j)))
+names(model_list) <- statuses
+model_list$All <- our_analysis(df)
+
+by_status <- 
+  lapply(model_list, function(model) tidy(model)) %>% 
+  bind_rows(.id = "status") %>%
+  mutate(status = factor(status, c("All", statuses)))
+
+# Table version
+
+fileConn <- file(tab_2_path)
+writeLines(texreg(model_list, float.pos = "h!", include.ci = FALSE, caption = "Main results, with interactions. Individual fixed effects modelled by regressing differences in responses across two vignetters on differences in treatments and interactions. All treatments are centered on zero for each group.",
+                  custom.coef.map =  list("(Intercept)" = "Constant (No incentives)",
+                                          "financialA" = "25 Euro incentive",
+                                          "financialB" = "50 Euro incentive",
+                                          "negative" = "Freedoms",
+                                          "transaction" = "Local doctors",
+                                          
+"negative:financialA" = "Freedoms * 25 Euros",
+"negative:financialB" = "Freedoms * 50 Euros",
+"negative:transaction" = "Freedoms * Local doctors",
+"financialA:transaction" = "Local doctors * 25 Euros",
+"transaction:financialB" = "Local doctors * 50 Euros",
+"negative:financialA:transaction" = "Freedoms * Local doctors * 25 Euros",
+"negative:transaction:financialB" ="Freedoms * Local doctors * 50 Euros"), digits = 3), fileConn)
+close(fileConn)
+
+
+# Figure Version
+figure_2 <-
+  
+  by_status %>% 
+  dplyr::filter(term %in% c("negative", "financialA", "financialB", "transaction")) %>% 
+  dplyr::filter(status != "Vaccinated") %>%
+  mutate(Treatment = factor(term, treatment_levels, treatment_labels)) %>%
+  
+  ggplot(aes(Treatment, estimate, color = status, shape = status)) + 
+  geom_point(position = position_dodge(width = 0.3)) + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), position = position_dodge(width = 0.3), width = .1)+
+  geom_hline(yintercept=0, linetype="longdash", lwd=0.35, size=0.75, colour = "#B55555") + 
+  theme_bw(base_size=14)+
+  ylab("Change in probability of willingness to get vaccinated (0-1)")
+
+figure_2
+
+# Export
+
+pdf(fig_2_path, width = 8, height = 6) 
+figure_2 
+dev.off()
+
+```
+
+### By round
+
+```{r}
+# analysis by period
+df_stacked2 <- bind_rows(
+  df_stacked %>% dplyr::filter(status != "Vaccinated"),
+  df_stacked %>% dplyr::filter(status != "Vaccinated") %>% mutate(status = "All"))
+
+out <-   lapply(1:2, function(period)
+              df_stacked2 %>% dplyr::filter(t==period) %>%
+                split(.$status) %>%
+                map(~lm_robust(outcome ~ negative + financialA + financialB + transaction, data = .)) %>%
+                map(tidy) %>%
+  bind_rows(.id = "status") %>% mutate(t=period)) %>%
+  bind_rows() %>%
+  dplyr::filter(term %in% treatments) %>% 
+  dplyr::filter(status != "Vaccinated") %>%
+  mutate(t = factor(t)) %>%
+  mutate(status = factor(status, c("All", "Acceptant", "Refusing", "Undecided"))) %>%
+  mutate(term = factor(term, treatments, treatment_labels))
+
+out %>%
+  ggplot(aes(term, estimate, color = t, shape = t)) + 
+  geom_point(position = position_dodge(width = 0.3)) + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), position = position_dodge(width = 0.3), width = .1) +
+  geom_hline(yintercept=0, linetype="longdash", lwd=0.35, size=0.75, colour = "#B55555") + 
+  theme_bw(base_size=14)+ facet_wrap(~status, ncol = 2) +
+  ylab("Effect on vaccination probability (0-1)") 
+
+```
+
+```{r, eval = FALSE}
+# Analysis first round
+  first <-
+  df %>%
+  split(.$status) %>%
+  map(~lm_robust(outcome_t1 ~ negative_t1 + financialA_t1 + financialB_t1 + transaction_t1, data = .)) %>%
+  map(tidy) %>%
+  bind_rows(.id = "status")%>% 
+  dplyr::filter(term %in% c("negative_t1", "financialA_t1", "financialB_t1", "transaction_t1")) %>% 
+  dplyr::filter(status != "Vaccinated") 
+
+first %>%
+  ggplot(aes(term, estimate, color = status, shape = status)) + 
+  geom_point(position = position_dodge(width = 0.3)) + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), position = position_dodge(width = 0.3), width = .1)+
+  geom_hline(yintercept=0, linetype="longdash", lwd=0.35, size=0.75, colour = "#B55555") + 
+  theme_bw(base_size=14)+
+  ylab("Change in probability of willingness to get vaccinated (0-1)")+
+  ggtitle("First Vignette") 
+
+# Analysis second round
+  second<-df %>%
+  split(.$status) %>%
+  map(~lm_robust(outcome_t2~ negative_t2 + financialA_t2 + financialB_t2 + transaction_t2, data = .)) %>%
+  map(tidy) %>%
+  bind_rows(.id = "status")%>% 
+  dplyr::filter(term %in% c("negative_t2", "financialA_t2", "financialB_t2", "transaction_t2")) %>% 
+  dplyr::filter(status != "Vaccinated") %>%
+  ggplot(aes(term, estimate, color = status, shape = status)) + 
+  geom_point(position = position_dodge(width = 0.3)) + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), position = position_dodge(width = 0.3), width = .1)+
+  geom_hline(yintercept=0, linetype="longdash", lwd=0.35, size=0.75, colour = "#B55555") + 
+  theme_bw(base_size=14)+
+  ylab("Change in probability of willingness to get vaccinated (0-1)")+
+  ggtitle("Second Vignette") 
+  
+# Analysis first round
+  grid.arrange(first, second)
+
+```
+
+
+## Check for consistency bias
+
+```{r}
+# effect of lag:
+# Note that lag treatment is negatively correlated with current treatment
+
+lag_out <-  
+  bind_rows(
+    df %>% dplyr::filter(status != "Vaccinated"),
+    df %>% dplyr::filter(status != "Vaccinated") %>% mutate(status = "All"))  %>% 
+                split(.$status) %>%
+                map(~lm_robust(outcome_t2 ~ negative_t1 + financialA_t1 + financialB_t1 + transaction_t1, data = .)) %>%
+                map(tidy) %>%
+  bind_rows(.id = "status") %>%
+  dplyr::filter(term %in% paste0(treatments, "_t1")) %>% 
+  dplyr::filter(status != "Vaccinated") %>%
+  mutate(status = factor(status, c("All", "Acceptant", "Refusing", "Undecided"))) %>%
+  mutate(term = factor(term, paste0(treatments, "_t1"), treatment_labels))
+
+lag_out %>%
+  ggplot(aes(term, estimate, color = status, shape = status)) + 
+  geom_point(position = position_dodge(width = 0.3)) + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), position = position_dodge(width = 0.3), width = .1) +
+  geom_hline(yintercept=0, linetype="longdash", lwd=0.35, size=0.75, colour = "#B55555") + 
+  theme_bw(base_size=14)+
+  ylab("Effect of t1 treatment on t2 vaccination probability (0-1)") 
+
+
+c(
+  cor(df$financialA_t1, df$financialA_t2),
+  cor(df$financialB_t1, df$financialB_t2),
+  cor(df$negative_t1, df$negative_t2),
+  cor(df$transaction_t1, df$transaction_t2))
+
+```
+
+Accounting for current:
+
+```{r}
+
+lm_robust(outcome_t2 ~ 
+            negative_t1 + financialA_t1 + financialB_t1 + transaction_t1 +
+                                 financialA_t2*transaction_t2*negative_t2+
+                                 financialB_t2*transaction_t2*negative_t2, 
+          data = df %>% dplyr::filter(status != "Vaccinated")) %>% tidy %>%
+  kable(digits = 2)
+
+
+lag_out_2 <-  
+  bind_rows(
+    df %>% dplyr::filter(status != "Vaccinated"),
+    df %>% dplyr::filter(status != "Vaccinated") %>% mutate(status = "All"))  %>% 
+                split(.$status) %>%
+                map(~lm_robust(outcome_t2 ~ negative_t1 + financialA_t1 + financialB_t1 + transaction_t1 +
+                                 financialA_t2*transaction_t2*negative_t2+
+                                 financialB_t2*transaction_t2*negative_t2, data = .)) %>%
+                map(tidy) %>%
+  bind_rows(.id = "status") %>%
+  dplyr::filter(term %in% paste0(treatments, "_t1")) %>% 
+  dplyr::filter(status != "Vaccinated") %>%
+  mutate(status = factor(status, c("All", "Acceptant", "Refusing", "Undecided"))) %>%
+  mutate(term = factor(term, paste0(treatments, "_t1"), treatment_labels))
+
+lag_out_2 %>%
+  ggplot(aes(term, estimate, color = status, shape = status)) + 
+  geom_point(position = position_dodge(width = 0.3)) + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), position = position_dodge(width = 0.3), width = .1) +
+  geom_hline(yintercept=0, linetype="longdash", lwd=0.35, size=0.75, colour = "#B55555") + 
+  theme_bw(base_size=14)+
+  ylab("Effect of t1 treatment on t2 vaccination probability (0-1)")  + ylim(c(NA, .075))
+
+
+
+```
+
+## Omnibus treatment
+
+The all or nothing comparison uses a small share of data, but shows evidence of a 14 point effect for the undecided.
+
+Note that no fixed effects used here since we generally have only one observation per person. 
+
+```{r}  
+
+data_omnibus <- lapply(statuses, function(s)
+  df_stacked %>%
+      mutate(
+        omnibus = negative * financialB * transaction,
+        zip = (1-negative) * (1-financialA) * (1-financialB) * (1-transaction)) %>%
+      dplyr::filter((omnibus==1) | (zip==1)) %>%
+      dplyr::filter(status == s)) 
+
+names(data_omnibus) <- statuses 
+
+lapply(data_omnibus, function(d)
+table(table(d$ID))) %>% bind_cols %>% mutate(freq = 1:2) %>% relocate(freq) %>%
+  kable(caption = "Most subjects appear only once", booktabs = TRUE)
+
+omnibus <- lapply(data_omnibus, function(d) lm_robust(outcome ~ omnibus, data = d, cluster = ID, se_type = "stata")) 
+  
+  omnibus[[4]] %>% tidy %>%
+  kable(digits = 2, caption = "All or nothing comparisons", booktabs = TRUE)
+
+fileConn<-file(tab_3_path)
+writeLines(texreg(omnibus, float.pos = "h!", include.ci = FALSE, caption = "\\label{omnibus} Effects of receiving all treatments compared to all control conditions", custom.coef.map =  list("(Intercept)" = "Constant (No incentives)","omnibus"
+= "Maximal incentives")), fileConn)
+close(fileConn)
+
+  
+```
+
+### Visualization of effects
+
+```{r}
+# Omnibus visualization
+df_stacked %>%
+      mutate(
+        omnibus = negative * financialB * transaction,
+        zip = (1-negative) * (1-financialA) * (1-financialB) * (1-transaction)) %>%
+      dplyr::filter((omnibus==1) | (zip==1)) %>% 
+  group_by(omnibus) %>% 
+  mutate(N = n()) %>% ungroup() %>% 
+  group_by(status, omnibus) %>% 
+  summarize(n = n()/mean(N), share_pop_vaccinated = n()*mean(outcome)/mean(N)) %>% arrange(omnibus) %>% mutate(omnibus = factor(omnibus)) %>%
+  ggplot(aes(fill=status, y=share_pop_vaccinated, x=omnibus)) + 
+    geom_bar(position="stack", stat="identity") + ylab("Share of population vaccinated") + theme_bw() + ylim(0:1)
+
+# Cash visualization: if other elements already
+df_stacked %>%
+      dplyr::filter(financialA==0 & negative ==1 & transaction ==1) %>%
+  group_by(financialB) %>% 
+  mutate(N = n()) %>% ungroup() %>% 
+  group_by(status, financialB) %>% 
+  summarize(n = n()/mean(N), share_pop_vaccinated = n()*mean(outcome)/mean(N)) %>% arrange(financialB) %>% mutate(financialB = factor(financialB)) %>%
+  ggplot(aes(fill=status, y=share_pop_vaccinated, x=financialB)) + 
+    geom_bar(position="stack", stat="identity") + ylab("Share of population vaccinated") + theme_bw() + ylim(0:1) + xlab("Financial 50")
+
+```
+
+## Notes
+
+Share of hesitant, undecided, that are AFD supports or support no party
+
+```{r}
+df %>% 
+  group_by(status) %>% 
+  summarize(AfD = mean(AfD), 
+            no_party = mean(No.party), 
+            trust_experts = mean(trust.experts), 
+            media_exaggerates = mean(covid.media), 
+            fear_longterm = mean(fear.longterm, na.rm = TRUE)) %>%
+  kable(digits = 2, booktabs = TRUE)
+
+
+```

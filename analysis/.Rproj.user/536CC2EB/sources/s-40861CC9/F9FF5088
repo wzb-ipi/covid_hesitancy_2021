@@ -1,0 +1,26 @@
+{
+    "id": "F9FF5088",
+    "path": "C:/Dropbox/Covid Vaccine Allocation/5_writing/Paper 1/PNAS/analysis/1_prep_data.Rmd",
+    "project_path": "1_prep_data.Rmd",
+    "type": "r_markdown",
+    "hash": "909003659",
+    "contents": "",
+    "dirty": false,
+    "created": 1619180453633.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "chunk_output_type": "console",
+        "cursorPosition": "30,0",
+        "scrollLine": "23",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1625624425,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1625624425877,
+    "read_only": false,
+    "read_only_alternatives": []
+}

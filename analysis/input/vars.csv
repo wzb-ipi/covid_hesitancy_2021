@@ -34,7 +34,7 @@
 "v_31","0","vaccination.eligible","0","Vaccination eligibility","33","4","Health"
 "v_32","0","vaccination.invitation","0","Vaccination invitation","34","4","Health"
 "v_33","0","vaccination.intent","0","Vaccination intent","35","4","Health"
-"","1","hesitant","1","Hesitant","36","5","Covid 19"
+"","1","refusing","1","Refusals","36","5","Covid 19"
 "","1","undecided","1","Undecided","37","5","Covid 19"
 "","1","acceptant","1","Acceptant","38","5","Covid 19"
 "v_43","0","covid.information","1","Seeks Covid information","39","5","Covid 19"
@@ -72,3 +72,4 @@
 "v_51","0","international.solidarity","1","Values international solidarity","71","8","Values"
 "v_73","0","EU.support","1","EU support","72","8","Values"
 "v_161","0","migration.support","1","Migration support","73","8","Values"
+"distance_km","0","distance_km","1","Distance to Vaccination Center","74","2","Background"
