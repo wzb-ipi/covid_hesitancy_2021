@@ -27,8 +27,8 @@ editor_options:
   chunk_output_type: console
 ---
 
-This `.Rmd` file replicates all analyses and saves tables and figures as outputs from [Incentives can spur Covid-19 vaccination uptake]("https://osf.io/ax6pw/").
-Data used can be downloaded [here]("input/wave_1/D-P21-13185 HU Berlin Impfskeptiker_Finaler_Datensatz.sav").
+This `.Rmd` file replicates all analyses and saves tables and figures as outputs from [Incentives can spur Covid-19 vaccination uptake](https://osf.io/ax6pw/).
+Data used can be downloaded [here](input/wave_1/D-P21-13185 HU Berlin Impfskeptiker_Finaler_Datensatz.sav).
 
 # Housekeeping
 
