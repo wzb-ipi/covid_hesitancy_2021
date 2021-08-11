@@ -1,0 +1,27 @@
+{
+    "id": "9F488A85",
+    "path": "C:/Dropbox/github/covid_hesitancy_2021/3_het_effects.Rmd",
+    "project_path": "3_het_effects.Rmd",
+    "type": "r_markdown",
+    "hash": "4163874969",
+    "contents": "",
+    "dirty": false,
+    "created": 1628676296078.0,
+    "source_on_save": false,
+    "relative_order": 4,
+    "properties": {
+        "chunk_output_type": "console",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "488,20",
+        "scrollLine": "488"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1628682491,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1628682491571,
+    "read_only": false,
+    "read_only_alternatives": []
+}
