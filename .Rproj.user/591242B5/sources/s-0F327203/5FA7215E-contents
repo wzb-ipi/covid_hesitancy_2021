@@ -4,8 +4,6 @@ date: "March 2021"
 output:
   html_document:
     number_sections: no
-#    toc: yes
-#    toc_float: yes
     toc_depth: 2
     self_contained: yes
   pdf_document:
@@ -32,19 +30,10 @@ Raw data has treatments recorded in a single vector with 12 values. These are no
 ```{r}
 
 # get labels
-Z_labels <- read_sav(datapath) %>%
-  pull(c_0031) %>% attr("labels") %>%
-  names() %>% strsplit( "-") %>% 
-  lapply(function(x) data.frame(t(x))) %>% bind_rows() %>% mutate(Z_1_1 = 1:12) %>%
-  mutate(negative_t1 = as.numeric(X1), 
-         transaction_t1 = as.numeric(X3), 
-         financialA_t1 = 1*(X2 =="1a"), 
-         financialB_t1 = 1*(X2 =="1b")) %>%
-  dplyr::select(Z_1_1, negative_t1, financialA_t1, financialB_t1, transaction_t1)
-
+Z_labels <- read.csv("input/Z_labels.csv") %>% dplyr::select(-X)
 kable(Z_labels, booktabs = TRUE)
 
-df <- read_sav(datapath) %>%
+df <- read.csv("input/wave_1.csv") %>%
   rowid_to_column("ID")  %>%
   mutate(
     Z_1_1 = as.numeric(paste(c_0031)),
@@ -63,12 +52,11 @@ df <- read_sav(datapath) %>%
         financialB_t2 = financialB_t1
       )
   ) %>%
-#    mutate(distance_km = NA) %>%
 
   # rename covariates
   rename_at(
-    vars(var_list$var_name[var_list$transformed==0 & var_list$new_name!="distance_km"]), 
-    ~ var_list$new_name[var_list$transformed==0 & var_list$new_name!="distance_km"]) %>%
+    vars(var_list$var_name[var_list$rename == 1]), 
+    ~ var_list$new_name[var_list$rename == 1]) %>%
   
   # transformations
   mutate(
@@ -77,8 +65,6 @@ df <- read_sav(datapath) %>%
     financialA_diff  = financialA_t2 - financialA_t1,
     financialB_diff  = financialB_t2 - financialB_t1,
     transaction_diff = transaction_t2 - transaction_t1,
-    date = as.numeric(as.Date(datetime)),
-    postcode = as.numeric(postcode),
     days = (date - min(date) +1)/21, # Normalized to 0-1
     status = ifelse(
       is.na(vaccination.intent),
@@ -91,31 +77,6 @@ df <- read_sav(datapath) %>%
       "2" = "Refusing",
       "3" = "Undecided"
     ),
-     casmin = case_when(
-                    education== 1 & v_142== 7 ~ 0,
-                    education== 2 & v_142== 7 ~ 1,
-                    (education==2) & (v_142==1 | v_142==2 | v_142==3) ~ 2,
-                    (education==1) & (v_142==1 | v_142==2 | v_142==3)  ~ 2,
-                    education== 3 & v_142== 7 ~ 3,
-                    (education==3) & (v_142==1 | v_142==2 | v_142==3) ~ 4,
-                    (education==4 | education==5) & (v_142==7)~ 5,
-                    (education==4 | education==5) & (v_142==1 | v_142==2 | v_142==3) ~ 6,
-                    (education==4)  ~ 7,
-                    (education==5)  ~ 8,
-                    TRUE ~ NA_real_ # This is for all other values not covered by the above.
-    ),
-    eduyears = case_when(
-                    casmin == 0 ~ 8,
-                    casmin == 1 ~ 9,
-                    casmin == 2 ~ 12,
-                    casmin == 3 ~ 10,
-                    casmin == 4 ~ 13,
-                    casmin == 5 ~ 13,
-                    casmin == 6 ~ 15,
-                    casmin == 7 ~ 16,
-                    casmin == 8 ~ 18,
-                    TRUE ~ NA_real_ # This is for all other values 
-),
     eduyears = (eduyears - min(eduyears, na.rm = TRUE))/max(eduyears, na.rm = TRUE),
     household.larger = (household.size > 2)*1,
     covid.media = 1-(covid.media-1)/4, 
@@ -171,101 +132,14 @@ df <- read_sav(datapath) %>%
     health2 = 1*(health2 == 1),
     covid.surveys = ifelse(covid.surveys == 99, NA, covid.surveys),
     east.west =ifelse(federal.state== "4" |#"Brandenburg"
-                                  federal.state== "8" |#"Mecklenburg-Vorpommern"
-                                  federal.state== "13"|#"Sachsen"
-                                  federal.state== "14"|#Sachsen-Anhalt
-                                  federal.state== "16" #"Thüringen"
+                                  federal.state== "8" | # Mecklenburg-Vorpommern
+                                  federal.state== "13"| # Sachsen
+                                  federal.state== "14"| # Sachsen-Anhalt
+                                  federal.state== "16"  # Thüringen
                                   , 1, 0)
   )
 
 ```
-
-## Distance 
-
-We calculate a measure of distance to vaccination centers. 
-
-```{r, results = "asis", message = FALSE}
-# zip code: five digits
-#Source: https://www.suche-postleitzahl.org/downloads
-ogrInfo(dsn="input/postal code/plz-5stellig.shp/plz-5stellig.shp")
-postal_shape <- readOGR(dsn="input/postal code/plz-5stellig.shp/plz-5stellig.shp")
-
-#plot(postal_shape)
-typeof(postal_shape)
-proj4string(postal_shape)
-
-# get centroid
-postal_shape_centers <- SpatialPointsDataFrame(gCentroid(postal_shape, byid=TRUE), 
-                                      postal_shape@data, match.ID=FALSE)
-# test, looks good
-plot(postal_shape_centers)
-# transform to get meters
-postal_shape_centers1<-spTransform(postal_shape_centers,CRS("+proj=utm +zone=32 +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs"))
-proj4string(postal_shape_centers1)
-plot(postal_shape_centers1)
-#########################################
-# load vaccination centers with geo code 
-#########################################
-# Source:
-centers <- geojsonsf::geojson_sf("input/vaccination_centers/export.geojson")
-# check if all covid 19 vaccinations 
-plyr::count(centers$vaccination)
-# could be that vaccination center is multiple times in the data (see wiki page)
-# for us not important, only minimal distance important
-# extract the coordinnates
-poly<-centers %>% 
-  dplyr::select(geometry) 
-class(poly)
-
-# calculate center again because some object are polgyon and we want points 
-centers  <- st_centroid(poly)
-centers_points <- as_Spatial(centers)
-# plot(centers_points)
-# convert to same format 
-# transform to get meters
-proj4string(centers_points)
-pts <- spTransform(centers_points,CRS("+proj=utm +zone=32 +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs"))
-proj4string(pts)
-
-#########################################
-# merge
-#########################################
-# load shp as dataframe (to merge onto)
-postal_shape_out <- st_read('input/postal code/plz-5stellig.shp/plz-5stellig.shp')
-
-# gDistance by default returns the cartesian minimum distance between the two geometries in the units of the current projection. 
-postal_shape_out$distance_vaccination<-sapply(1:length(postal_shape_centers1),function(x)gDistance(pts,postal_shape_centers1[x,]))
-# check distribution, looks reasonable
-# hist(postal_shape_out$distance_vaccination)
-
-# rename to fit survey file
-distance<-as.data.frame(postal_shape_out)%>% 
-  dplyr::rename(postcode = plz) %>% 
-  dplyr::mutate(postcode = as.numeric(postcode)) %>% 
-  dplyr::rename(city = note) %>% 
-  dplyr::mutate(distance_km=distance_vaccination/1000) %>% 
-  dplyr::select (-c(geometry,distance_vaccination)) 
-
-typeof(distance$postcode)
-# check for duplicates
-n_occur <- data.frame(table(distance$postcode))
-
-# merge
-df <- left_join(df, distance, by = "postcode")
-hist(df$distance_km)
-
-df <- df %>% dplyr::mutate(distance_km_raw = distance_km, 
-                           distance_km = (distance_km - min(distance_km, na.rm = TRUE))/
-                             (max(distance_km, na.rm = TRUE) - min(distance_km, na.rm = TRUE)))
-
-```
-
-```{r, results = "asis"}
-#print(dfSummary(df[,covariate_names], graph.magnif = 0.75), method = 'render')
-
-```
-
-
 
 ## Stacked dataframe
 
@@ -273,7 +147,7 @@ The wide dataframe is used for first differences analysis. In addition we make u
 
 ```{r}
 
-# This should also be possible with pivot_longer
+# Stack
 df_stacked <- 
   bind_rows(mutate(df, t = 1), mutate(df, t = 2)) %>%
   mutate(
@@ -377,7 +251,7 @@ Around 65 \% in the sample would get vaccinated, 17 \% would not, and 18 \% rema
 
 ```{r}
 fig_1 <- df %>% ggplot(aes(status)) + 
-  geom_hline(yintercept=0.7, linetype="longdash", lwd=0.35, size=0.75, colour = "#B55555") +
+  geom_hline(yintercept=0.7, linetype="longdash", lwd=0.35, colour = "#B55555") +
   geom_bar(aes(y = (..count..)/sum(..count..)),width = 0.6,alpha = 0.5) + 
   scale_y_continuous(labels=scales::percent) +
   theme_bw(base_size=16)+
@@ -395,9 +269,9 @@ Concerns of the hesitent and undecided
 
 ```{r}
 fig_2 <- 
-  df %>% dplyr::select(starts_with("fear.")) %>%
+  df %>% dplyr::select(ID, starts_with("fear.")) %>%
   mutate_if(is.character, as.numeric) %>% 
-  melt(variable.name = "Group") %>%  
+  melt(variable.name = "Group", id.vars = "ID") %>%  
   mutate(Group = 
            factor(Group,
                   c("fear.longterm", "fear.admission", "fear.effectiveness", "fear.side.effects", "fear.no.danger"),
