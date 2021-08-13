@@ -25,7 +25,7 @@ editor_options:
 
 Import data,  get labels for treatment, rename variables, generate differences.
 
-Raw data has treatments recorded in a single vector with 12 values. These are now transformed ino the underlying factors. 
+Raw data has treatments recorded in a single vector with 12 values. These are now transformed into the underlying factors. 
 
 ```{r}
 

@@ -138,3 +138,23 @@ query_model(meng_model,
   kable(digits = 3)
 
 ```
+
+
+
+```{r, eval = TRUE}
+
+query_model(meng_model, 
+            queries = "Y[M=1] > Y[M=0]", 
+            given = c("X==0", "X==1"),
+            using = "posteriors") %>%
+  kable(digits = 3)
+
+# Does M help for cases with no direct effect, absent M
+query_model(meng_model, 
+            queries = "Y[M=1] > Y[M=0]", 
+            given = c("Y[X=1, M=0] <= Y[X=0, M=0]",
+                      "Y[X=1, M=0] > Y[X=0, M=0]"),
+            using = "posteriors") %>%
+  kable(digits = 3)
+
+```

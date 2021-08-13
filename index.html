@@ -274,9 +274,7 @@ div.tocify {
 <h1 number="1"><span class="header-section-number">1</span> Housekeeping</h1>
 <pre class="r"><code>knitr::opts_chunk$set(echo=TRUE, warning=FALSE, message=FALSE, comment=NA)
 options(qwraps2_markup = &quot;markdown&quot;)</code></pre>
-<p>Code chunk uses <code>pacman</code> to install and load all packages.</p>
-<div id="packages" class="section level2" number="1.1">
-<h2 number="1.1"><span class="header-section-number">1.1</span> Packages</h2>
+<p>Packages: The next code chunk uses <code>pacman</code> to install and load all packages.</p>
 <pre class="r"><code>if (!require(pacman)) install.packages(&quot;pacman&quot;)
 
 pacman::p_load(
@@ -323,10 +321,7 @@ N_trees = 1000
 
 # Set seed for reproducibility
 set.seed(201911) </code></pre>
-</div>
-<div id="paths" class="section level2" number="1.2">
-<h2 number="1.2"><span class="header-section-number">1.2</span> Paths</h2>
-<p>Code chunk provides paths for pulling data and saving figures and tables.</p>
+<p>Paths: The next code chunk provides paths for pulling data and saving figures and tables.</p>
 <pre class="r"><code># PNAS figures
 fig_1_AB_path &lt;- &quot;output/fig_1_AB.pdf&quot;
 fig_2_ABC_path &lt;- &quot;output/fig_2_ABC.pdf&quot;
@@ -363,13 +358,12 @@ statuses &lt;- c(&quot;Acceptant&quot;, &quot;Refusals&quot;, &quot;Undecided&qu
 # Training fraction
 train_fraction &lt;- 1  # for causal forests: currently all data used</code></pre>
 </div>
-</div>
 <div id="prepare-data" class="section level1" number="2">
 <h1 number="2"><span class="header-section-number">2</span> Prepare Data</h1>
 <div id="import-data" class="section level2" number="2.1">
 <h2 number="2.1"><span class="header-section-number">2.1</span> Import data</h2>
 <p>Import data, get labels for treatment, rename variables, generate differences.</p>
-<p>Raw data has treatments recorded in a single vector with 12 values. These are now transformed ino the underlying factors.</p>
+<p>Raw data has treatments recorded in a single vector with 12 values. These are now transformed into the underlying factors.</p>
 <pre class="r"><code># get labels
 Z_labels &lt;- read.csv(&quot;input/Z_labels.csv&quot;) %&gt;% dplyr::select(-X)
 kable(Z_labels, booktabs = TRUE)</code></pre>
@@ -4015,7 +4009,7 @@ NaN
 <p>For heterogeneity analysis we draw on the Causal Forests approach described in <a href="https://projecteuclid.org/download/pdfview_1/euclid.aos/1547197251">Athey, Tibshrani and Wager (Annals of Statistics, 2019)</a> , <a href="https://arxiv.org/abs/1712.04912">Nie and Wager, 2017</a></p>
 <div id="helpers" class="section level2" number="4.1">
 <h2 number="4.1"><span class="header-section-number">4.1</span> Helpers</h2>
-<p>A function to prep het effects data for a given treatment, removing others.</p>
+<p>A function to prep heterogeneous effects data for a given treatment, removing others.</p>
 <pre class="r"><code>num_tiles &lt;- 4  # ntiles = CATE is above / below the median
 
 # Note this is set up so that we can swap in the difference outcome easily
@@ -4035,10 +4029,8 @@ het_df &lt;- function(treatment_name = &quot;transaction_diff&quot;,
       Y = ifelse(W&lt;0, -Y, Y),
       W = W^2)  
 }</code></pre>
+<p>A function to fit the forest and save outputs: input dataframe should have a privileged Y and W.</p>
 <pre class="r"><code># heterogeneous treatment effects 
-
-### Function to fit the forest and save outputs: input dataframe should have a privileged Y and W
-# Not training not used
 
 f_cf &lt;- function(df, n_trees = 1000) {
   
@@ -4097,7 +4089,7 @@ list(cf = cf,
      var_imp = var_imp, 
      ntile_estimates = combined_estimates)
 }</code></pre>
-<p>Function to generate fitted values:</p>
+<p>A function to generate fitted values.</p>
 <pre class="r"><code>fitted_vals &lt;- function(var_of_interest, model = test){
   
   df_forests &lt;- model$df_forests

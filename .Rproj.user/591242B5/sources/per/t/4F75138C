@@ -3,7 +3,7 @@
     "path": "C:/Dropbox/github/covid_hesitancy_2021/index.Rmd",
     "project_path": "index.Rmd",
     "type": "r_markdown",
-    "hash": "0",
+    "hash": "3509917772",
     "contents": "",
     "dirty": false,
     "created": 1628681691009.0,
@@ -17,11 +17,11 @@
         "scrollLine": "18"
     },
     "folds": "",
-    "lastKnownWriteTime": 1628776698,
+    "lastKnownWriteTime": 1628777665,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1628776698,
+    "last_content_update": 1628777665,
     "read_only": false,
     "read_only_alternatives": []
 }

@@ -1,0 +1,160 @@
+---
+title: "Meng"
+author: "M"
+date: "6/14/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(haven)
+library(CausalQueries)
+library(tidyverse)
+library(knitr)
+library(DeclareDesign)
+options(mc.cores = parallel::detectCores())
+```
+
+
+```{r}
+df <- haven::read_dta("data.dta") %>%
+    filter(first_president == 1)  # reduce to just 1/3 of data
+
+# dataMaid::makeDataReport(df)
+
+leaders <- read.csv("nationalist leaders.csv")
+
+# df$pres_lastname[!(df$pres_lastname  %in% leaders$pres_lastname)]
+# leaders$pres_lastname[!(leaders$pres_lastname  %in% df$pres_lastname)]
+
+df_meng <- df %>%
+  left_join(leaders) %>% 
+  filter(!country == "Liberia") %>%
+  mutate(Y   = transition_peace,
+         Y1  = exit_peace,   # peaceful out: 1- deposed
+         Y2  = ifelse(exit_peace==0, 0, enter_peace), # peaceful in
+         M = vp_rule, # succession_rule, 
+         X = nationalist.leader, # REPLACE: Strong leader
+         W = 1*(gdpcap > median(gdpcap, na.rm = TRUE))# controls  
+         ) %>%
+  select(country, pres_lastname, X, M, Y, Y1, Y2, W)
+
+kable(df_meng)
+
+with(df_meng, table(X, M))
+with(df_meng, table(X, Y))
+
+lm_robust(M~X, data = df_meng) %>% tidy %>% kable(digits = 2)
+lm_robust(M~X*W, data = df_meng) %>% tidy %>% kable(digits = 2)
+lm_robust(Y~M*X, data = df_meng) %>% tidy %>% kable(digits = 2)
+lm_robust(Y~M*X*W, data = df_meng) %>% tidy %>% kable(digits = 2)
+lm_robust(Y~M*X+W, data = df_meng) %>% tidy %>% kable(digits = 2)
+
+with(df_meng, table(M,X,W))
+```
+
+Basic argument should be, I think:
+
+* X should cause Y
+* M should also cause Y
+* X should have a negative effect on M: why? Weak leaders wanting Y need M, strong leaders do not 
+
+This should presumably result in everyone having positive Y!
+There is no first stage average X->M relationship. But there is M->Y.
+
+Is it possible that: 
+
+* those for whom rules were due to weakness, call them a(X, M) are ones for whom M caused peaceful transition b(M, Y | X): these are overall a(X, Y) types
+* those for whom rules were due to strength, call them b(X, M) are ones for whom M was irrelevant for transition cd(M, Y): these are overall b(X, Y) types
+
+* this requires something pointing into M and Y that explains different strategies and variation in Y. 
+* Sophisticated players have a(X,M)
+* Sophisticated players have b(M,Y)
+* Unsophisticated players have b(X,M)
+* Can this be set up? Is there evidence for it?
+
+# Causal Queries
+
+```{r, eval = FALSE}
+disagg_meng_model <- make_model("X -> M -> Y1 <- X; 
+                          M -> Y2 <- X;
+                          Y1 -> Y2;
+                          W -> M;
+                          W -> Y1;
+                          W -> Y2;
+                          M -> Y2",
+                          add_causal_types = FALSE) %>%
+  set_restrictions("Y2[Y1=0]==1") 
+```
+
+
+```{r}
+
+meng_model <- make_model("X -> M -> Y <- X; 
+                          W -> M;
+                          W -> Y;
+                          M -> Y",
+                          add_causal_types = FALSE) 
+
+plot(meng_model)
+
+meng_model <- meng_model %>%
+  update_model(df_meng, refresh = 0, iter = 6000)
+
+query_model(meng_model, 
+            queries = "Y[X=1] != Y[X=0]", 
+            given = c("X==0 & Y==1", "X==0 & Y==1 & M==1", "X==0 & Y==1 & M==0"),
+            using = "posteriors") %>%
+  kable(digits = 3)
+```
+
+```{r, eval = TRUE}
+
+query_model(meng_model, 
+            queries = "Y[X=1] != Y[X=0]", 
+            given = c("X==1 & Y==0", "X==1 & Y==0 & M==1", "X==1 & Y==0 & M==0"),
+            using = "posteriors") %>%
+  kable(digits = 3)
+
+
+query_model(meng_model, 
+            queries = "Y[X=1] != Y[X=0]", 
+            given = c("X==1 & Y==1", "X==1 & Y==1 & M==1", "X==1 & Y==1 & M==0"),
+            using = "posteriors") %>%
+  kable(digits = 3)
+
+```
+
+Cameroon: weak X = 0, M = 1, Y = 1
+Cote d'Ivoire: X = 1, M = 0, Y = 0
+
+
+```{r, eval = TRUE}
+
+query_model(meng_model, 
+            queries = "Y[X=1] != Y[X=0]", 
+            given = c("X==0 & Y==0", "X==0 & Y==0 & M==1", "X==0 & Y==0 & M==0"),
+            using = "posteriors") %>%
+  kable(digits = 3)
+
+```
+
+
+
+```{r, eval = TRUE}
+
+query_model(meng_model, 
+            queries = "Y[M=1] > Y[M=0]", 
+            given = c("X==0", "X==1"),
+            using = "posteriors") %>%
+  kable(digits = 3)
+
+# Does M help for cases with no direct effect, absent M
+query_model(meng_model, 
+            queries = "Y[M=1] > Y[M=0]", 
+            given = c("Y[X=1, M=0] <= Y[X=0, M=0]",
+                      "Y[X=1, M=0] > Y[X=0, M=0]"),
+            using = "posteriors") %>%
+  kable(digits = 3)
+
+```

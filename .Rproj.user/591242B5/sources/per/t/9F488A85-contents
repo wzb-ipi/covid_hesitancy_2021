@@ -22,7 +22,7 @@ For heterogeneity analysis we draw on the Causal Forests approach described in [
 
 ## Helpers
 
-A function to prep het effects data for a given treatment, removing others.
+A function to prep heterogeneous effects data for a given treatment, removing others.
 
 ```{r}
 
@@ -49,12 +49,10 @@ het_df <- function(treatment_name = "transaction_diff",
 ```
 
 
+A function to fit the forest and save outputs: input dataframe should have a privileged Y and W.
 
 ```{r heterogeneous}
 # heterogeneous treatment effects 
-
-### Function to fit the forest and save outputs: input dataframe should have a privileged Y and W
-# Not training not used
 
 f_cf <- function(df, n_trees = 1000) {
   
@@ -116,7 +114,7 @@ list(cf = cf,
 ```
 
 
-Function to generate fitted values:
+A function to generate fitted values.
 
 ```{r}
 fitted_vals <- function(var_of_interest, model = test){

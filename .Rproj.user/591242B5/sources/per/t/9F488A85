@@ -1,27 +1,27 @@
 {
-    "id": "45A72094",
-    "path": "C:/Dropbox/github/covid_hesitancy_2021/1_prep_data.Rmd",
-    "project_path": "1_prep_data.Rmd",
+    "id": "9F488A85",
+    "path": "C:/Dropbox/github/covid_hesitancy_2021/3_het_effects.Rmd",
+    "project_path": "3_het_effects.Rmd",
     "type": "r_markdown",
-    "hash": "1287332544",
+    "hash": "350219382",
     "contents": "",
     "dirty": false,
-    "created": 1628772338576.0,
+    "created": 1628676296078.0,
     "source_on_save": false,
-    "relative_order": 2,
+    "relative_order": 4,
     "properties": {
         "chunk_output_type": "console",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "256,20",
-        "scrollLine": "250"
+        "cursorPosition": "488,0",
+        "scrollLine": "486"
     },
     "folds": "",
-    "lastKnownWriteTime": 1628775991,
+    "lastKnownWriteTime": 1628777812,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1628775991976,
+    "last_content_update": 1628777812,
     "read_only": false,
     "read_only_alternatives": []
 }

@@ -27,8 +27,8 @@ editor_options:
   chunk_output_type: console
 ---
 
-This `.Rmd` file replicates all analyses and saves tables and figures as outputs from [Incentives can spur Covid-19 vaccination uptake](https://osf.io/ax6pw/).
-Data used can be downloaded [here](https://wzb-ipi.github.io/covid_hesitancy_2021/input/wave_1/D-P21-13185%20HU%20Berlin%20Impfskeptiker_Finaler_Datensatz.sav).
+This `.Rmd` file replicates all analyses from [Incentives can spur Covid-19 vaccination uptake](https://osf.io/ax6pw/) and saves tex tables and pdf figures as outputs.
+Data used can be downloaded [here](https://wzb-ipi.github.io/covid_hesitancy_2021/input/wave_1.csv).
 
 # Housekeeping
 
@@ -37,9 +37,8 @@ knitr::opts_chunk$set(echo=TRUE, warning=FALSE, message=FALSE, comment=NA)
 options(qwraps2_markup = "markdown")
 ```
 
-Code chunk uses `pacman` to install and load all packages.
 
-## Packages
+Packages: The next code chunk uses `pacman` to install and load all packages.
 
 ```{r}
 if (!require(pacman)) install.packages("pacman")
@@ -90,9 +89,7 @@ N_trees = 1000
 set.seed(201911) 
 ```
 
-## Paths
-
-Code chunk provides paths for pulling data and saving figures and tables.
+Paths: The next code chunk provides paths for pulling data and saving figures and tables.
 
 ```{r}
 
