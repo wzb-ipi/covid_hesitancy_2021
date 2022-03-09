@@ -30,6 +30,8 @@ editor_options:
 This `.Rmd` file replicates all analyses from [Incentives can spur Covid-19 vaccination uptake](https://osf.io/ax6pw/) and saves tex tables and pdf figures as outputs.
 Data used can be downloaded [here](https://wzb-ipi.github.io/covid_hesitancy_2021/input/wave_1.csv).
 
+All code and input files are available at  https://github.com/wzb-ipi/covid_hesitancy_2021
+
 # Housekeeping
 
 ```{r setup, echo=TRUE}
